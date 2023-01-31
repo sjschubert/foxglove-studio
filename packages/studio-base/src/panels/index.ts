@@ -116,6 +116,13 @@ const builtin: PanelInfo[] = [
     hasCustomToolbar: true,
   },
   {
+    title: "Call Service",
+    type: "CallService",
+    description: "Call services.",
+    thumbnail: rawMessagesThumbnail,
+    module: async () => await import("./CallService"),
+  },
+  {
     title: "Log",
     type: "RosOut",
     description: "Display logs by node and severity level.",
