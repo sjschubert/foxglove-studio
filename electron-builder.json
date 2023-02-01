@@ -248,7 +248,21 @@
   "snap": {
     "confinement": "strict",
     "grade": "stable",
-    "summary": "Integrated visualization and diagnosis tool for robotics"
+    "summary": "Integrated visualization and diagnosis tool for robotics",
+    "plugs": [
+      "default",
+      {
+        "dot-foxglove-studio": {
+          "interface": "personal-files",
+          "read": ["$HOME/.foxglove-studio"],
+          "write": ["$HOME/.foxglove-studio"]
+        }
+      }
+    ],
+    "environment": {
+      "HOME": "$SNAP_REAL_HOME",
+      "TMPDIR": "$XDG_RUNTIME_DIR"
+    }
   },
   "publish": [
     {
