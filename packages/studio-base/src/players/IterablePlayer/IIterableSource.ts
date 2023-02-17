@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Time } from "@foxglove/rostime";
-import { MessageEvent } from "@foxglove/studio";
+import { MessageEvent, ParameterValue } from "@foxglove/studio";
 import { PlayerProblem, Topic, TopicStats } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
@@ -15,6 +15,7 @@ export type Initalization = {
   datatypes: RosDatatypes;
   profile: string | undefined;
   name?: string;
+  parameters?: Map<string, ParameterValue>;
 
   /** Publisher names by topic **/
   publishersByTopic: Map<string, Set<string>>;

@@ -126,6 +126,7 @@ export class IterablePlayer implements Player {
   private _providerTopics: Topic[] = [];
   private _providerTopicStats = new Map<string, TopicStats>();
   private _providerDatatypes: RosDatatypes = new Map();
+  private _providerParameters?: Map<string, ParameterValue>;
 
   private _capabilities: string[] = [
     PlayerCapabilities.setSpeed,
@@ -440,6 +441,7 @@ export class IterablePlayer implements Player {
         problems,
         publishersByTopic,
         datatypes,
+        parameters,
         name,
       } = await this._bufferedSource.initialize();
 
@@ -449,7 +451,12 @@ export class IterablePlayer implements Player {
       this._end = end;
       this._publishedTopics = publishersByTopic;
       this._providerDatatypes = datatypes;
+      this._providerParameters = parameters;
       this._name = name ?? this._name;
+
+      if (this._providerParameters) {
+        this._capabilities.push(PlayerCapabilities.getParameters);
+      }
 
       // Studio does not like duplicate topics or topics with different datatypes
       // Check for duplicates or for mismatched datatypes
@@ -741,6 +748,7 @@ export class IterablePlayer implements Player {
         topics: this._providerTopics,
         topicStats: this._providerTopicStats,
         datatypes: this._providerDatatypes,
+        parameters: this._providerParameters,
         publishedTopics: this._publishedTopics,
       };
     }

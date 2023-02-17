@@ -7,7 +7,7 @@ import { McapIndexedReader, McapTypes } from "@mcap/core";
 import Logger from "@foxglove/log";
 import { ParsedChannel, parseChannel } from "@foxglove/mcap-support";
 import { Time, fromNanoSec, toNanoSec, compare } from "@foxglove/rostime";
-import { MessageEvent } from "@foxglove/studio";
+import { MessageEvent, ParameterValue } from "@foxglove/studio";
 import {
   GetBackfillMessagesArgs,
   IIterableSource,
@@ -92,11 +92,22 @@ export class McapIndexedIterableSource implements IIterableSource {
     this.start = fromNanoSec(startTime ?? 0n);
     this.end = fromNanoSec(endTime ?? startTime ?? 0n);
 
+    // Load parameters from MCAP metadata records
+    const parameters = new Map<string, ParameterValue>();
+    parameters.set("MCAP_LIBRARY", this.reader.header.library);
+    parameters.set("MCAP_PROFILE", this.reader.header.profile);
+    for await (const metadata of this.reader.readMetadata()) {
+      for (const [key, value] of metadata.metadata.entries()) {
+        parameters.set(`${metadata.name}/${key}`, value);
+      }
+    }
+
     return {
       start: this.start,
       end: this.end,
       topics: [...topicsByName.values()],
       datatypes,
+      parameters,
       profile: this.reader.header.profile,
       problems,
       publishersByTopic: new Map(),

@@ -7,6 +7,7 @@ import { BlobReader } from "@foxglove/rosbag/web";
 import { parse as parseMessageDefinition } from "@foxglove/rosmsg";
 import { MessageReader } from "@foxglove/rosmsg-serialization";
 import { compare } from "@foxglove/rostime";
+import { ParameterValue } from "@foxglove/studio";
 import {
   PlayerProblem,
   MessageEvent,
@@ -153,6 +154,12 @@ export class BagIterableSource implements IIterableSource {
       }
     }
 
+    const parameters = new Map<string, ParameterValue>();
+    if (this._bag.header) {
+      parameters.set("ROSBAG_CHUNK_COUNT", this._bag.header.chunkCount);
+      parameters.set("ROSBAG_CONNECTION_COUNT", this._bag.header.connectionCount);
+    }
+
     return {
       topics: Array.from(topics.values()),
       topicStats,
@@ -161,6 +168,7 @@ export class BagIterableSource implements IIterableSource {
       problems,
       profile: "ros1",
       datatypes,
+      parameters,
       publishersByTopic,
     };
   }
