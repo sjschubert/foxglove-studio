@@ -153,6 +153,7 @@ function getPublicState(
     setParameter: props.setParameter ?? noop,
     publish: props.publish ?? noop,
     callService: props.callService ?? (async () => {}),
+    fetchAsset: global.fetch,
     startPlayback: props.startPlayback,
     playUntil: noop,
     pausePlayback: props.pausePlayback,

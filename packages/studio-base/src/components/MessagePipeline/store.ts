@@ -115,6 +115,13 @@ export function createMessagePipelineStore({
         }
         throw new Error("callService called when player is not present");
       },
+      async fetchAsset(input, init) {
+        const player = get().player;
+        if (player) {
+          return await (player.fetchAsset?.(input, init) ?? global.fetch(input, init));
+        }
+        throw new Error("fetchAsset called when player is not present");
+      },
       startPlayback: undefined,
       playUntil: undefined,
       pausePlayback: undefined,

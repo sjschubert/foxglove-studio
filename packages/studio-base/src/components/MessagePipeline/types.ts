@@ -26,6 +26,7 @@ export type MessagePipelineContext = {
   setParameter: (key: string, value: ParameterValue) => void;
   publish: (request: PublishPayload) => void;
   callService: (service: string, request: unknown) => Promise<unknown>;
+  fetchAsset(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
   startPlayback?: () => void;
   pausePlayback?: () => void;
   playUntil?: (time: Time) => void;
