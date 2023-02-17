@@ -56,6 +56,8 @@ export interface Player {
   // If the player support service calls (i.e. PlayerState#capabilities contains PlayerCapabilities.callServices)
   // this will make a service call to the named service with the request payload.
   callService(service: string, request: unknown): Promise<unknown>;
+  // Fetch an asset from the player, falling back to the global `fetch()`.
+  fetchAsset?(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
   // Basic playback controls. Available if `capabilities` contains PlayerCapabilities.playbackControl.
   startPlayback?(): void;
   pausePlayback?(): void;

@@ -54,6 +54,11 @@ export class WorkerIterableSourceWorker implements IIterableSource {
     const cursor = new IteratorCursor(iter, abort);
     return Comlink.proxy(cursor);
   }
+
+  public async fetchAsset(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const fetchAsset = this._source.fetchAsset ?? global.fetch;
+    return await fetchAsset(input, init);
+  }
 }
 
 Comlink.transferHandlers.set("abortsignal", abortSignalTransferHandler);

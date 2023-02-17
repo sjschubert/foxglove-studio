@@ -176,6 +176,16 @@ export interface IIterableSource {
   getMessageCursor?: (args: MessageIteratorArgs & { abort?: AbortSignal }) => IMessageCursor;
 
   /**
+   * An optional method to support custom asset loading before falling back to the global `fetch()`
+   * method.
+   *
+   * Sources such as MCAP files that support embedded assets, or remote sources that support
+   * downloading assets can implement this method to provide custom asset loading. If a source
+   * cannot locate a particular asset, it should fall back to the global `fetch()` method.
+   */
+  fetchAsset?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+  /**
    * Optional method a data source can implement to cleanup resources. The player will call this
    * method when the source will no longer be used.
    */

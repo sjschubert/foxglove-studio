@@ -347,6 +347,11 @@ export type PanelExtensionContext = {
   callService?(service: string, request: unknown): Promise<unknown>;
 
   /**
+   * Fetch an asset from the current data source, falling back to the global `fetch()` method.
+   */
+  fetchAsset: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+  /**
    * Process render events for the panel. Each render event receives a render state and a done callback.
    * Render events occur frequently (60hz, 30hz, etc).
    *
