@@ -14,7 +14,7 @@ import { ros2galactic } from "@foxglove/rosmsg-msgs-common";
 import { Time, fromMillis, toSec, isGreaterThan } from "@foxglove/rostime";
 import { Durability, Reliability } from "@foxglove/rtps";
 import { foxgloveMessageSchemas, generateRosMsgDefinition } from "@foxglove/schemas/internal";
-import { ParameterValue } from "@foxglove/studio";
+import { Asset, AssetInfo, ParameterValue } from "@foxglove/studio";
 import OsContextSingleton from "@foxglove/studio-base/OsContextSingleton";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
@@ -538,6 +538,14 @@ export default class Ros2Player implements Player {
 
   public async callService(): Promise<unknown> {
     throw new Error("Service calls are not supported by this data source");
+  }
+
+  public async listAssets(): Promise<AssetInfo[]> {
+    throw new Error("Listing assets is not supported for Ros2Player");
+  }
+
+  public async fetchAsset(name: string): Promise<Asset> {
+    throw new Error(`Fetching assets (${name}) is not supported for Ros2Player`);
   }
 
   // Bunch of unsupported stuff. Just don't do anything for these.

@@ -185,6 +185,10 @@ export class IterablePlayer implements Player {
     this._enablePreload = enablePreload ?? true;
     this._sourceId = sourceId;
 
+    if (this._iterableSource.listAssets && this._iterableSource.fetchAsset) {
+      this._capabilities.push(PlayerCapabilities.assets);
+    }
+
     // Wrap emitStateImpl in a debouncePromise for our states to call. Since we can emit from states
     // or from block loading updates we use debouncePromise to guard against concurrent emits.
     this._queueEmitState = debouncePromise(this._emitStateImpl.bind(this));

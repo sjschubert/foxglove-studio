@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Condvar, MutexLocked } from "@foxglove/den/async";
 import Log from "@foxglove/log";
 import { Time, compare } from "@foxglove/rostime";
-import { ParameterValue } from "@foxglove/studio";
+import { Asset, AssetInfo, ParameterValue } from "@foxglove/studio";
 import { GlobalVariables } from "@foxglove/studio-base/hooks/useGlobalVariables";
 import getPrettifiedCode from "@foxglove/studio-base/panels/NodePlayground/getPrettifiedCode";
 import { MemoizedLibGenerator } from "@foxglove/studio-base/players/UserNodePlayer/MemoizedLibGenerator";
@@ -1030,6 +1030,14 @@ export default class UserNodePlayer implements Player {
 
   public async callService(service: string, request: unknown): Promise<unknown> {
     return await this._player.callService(service, request);
+  }
+
+  public async listAssets(): Promise<AssetInfo[]> {
+    return await this._player.listAssets();
+  }
+
+  public async fetchAsset(name: string): Promise<Asset> {
+    return await this._player.fetchAsset(name);
   }
 
   public startPlayback(): void {
