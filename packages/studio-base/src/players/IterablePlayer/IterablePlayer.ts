@@ -18,7 +18,7 @@ import {
   toString,
   toRFC3339String,
 } from "@foxglove/rostime";
-import { MessageEvent, ParameterValue } from "@foxglove/studio";
+import { Asset, AssetInfo, MessageEvent, ParameterValue } from "@foxglove/studio";
 import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsCollector";
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
@@ -331,9 +331,18 @@ export class IterablePlayer implements Player {
     throw new Error("Service calls are not supported by this data source");
   }
 
-  public async fetchAsset(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const fetchAsset = this._iterableSource.fetchAsset ?? global.fetch;
-    return await fetchAsset(input, init);
+  public async listAssets(): Promise<AssetInfo[]> {
+    if (!this._iterableSource.listAssets) {
+      throw new Error("listAssets is not supported by this data source");
+    }
+    return await this._iterableSource.listAssets();
+  }
+
+  public async fetchAsset(name: string): Promise<Asset> {
+    if (!this._iterableSource.fetchAsset) {
+      throw new Error("fetchAsset is not supported by this data source");
+    }
+    return await this._iterableSource.fetchAsset(name);
   }
 
   public close(): void {

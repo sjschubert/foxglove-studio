@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Time } from "@foxglove/rostime";
-import { MessageEvent, ParameterValue } from "@foxglove/studio";
+import { Asset, AssetInfo, MessageEvent, ParameterValue } from "@foxglove/studio";
 import {
   AdvertiseOptions,
   PlayerState,
@@ -26,7 +26,8 @@ export type MessagePipelineContext = {
   setParameter: (key: string, value: ParameterValue) => void;
   publish: (request: PublishPayload) => void;
   callService: (service: string, request: unknown) => Promise<unknown>;
-  fetchAsset(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+  listAssets: () => Promise<AssetInfo[]>;
+  fetchAsset: (name: string) => Promise<Asset>;
   startPlayback?: () => void;
   pausePlayback?: () => void;
   playUntil?: (time: Time) => void;

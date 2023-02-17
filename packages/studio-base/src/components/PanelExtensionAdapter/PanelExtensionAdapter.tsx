@@ -12,6 +12,8 @@ import Logger from "@foxglove/log";
 import { fromSec, toSec } from "@foxglove/rostime";
 import {
   AppSettingValue,
+  Asset,
+  AssetInfo,
   ExtensionPanelRegistration,
   PanelExtensionContext,
   ParameterValue,
@@ -447,9 +449,23 @@ function PanelExtensionAdapter(props: PanelExtensionAdapterProps): JSX.Element {
           }
         : undefined,
 
-      fetchAsset: async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        return await getMessagePipelineContext().fetchAsset(input, init);
-      },
+      listAssets: capabilities.includes(PlayerCapabilities.assets)
+        ? async (): Promise<AssetInfo[]> => {
+            if (!isMounted()) {
+              throw new Error("Asset list after panel was unmounted");
+            }
+            return await getMessagePipelineContext().listAssets();
+          }
+        : undefined,
+
+      fetchAsset: capabilities.includes(PlayerCapabilities.assets)
+        ? async (name: string): Promise<Asset> => {
+            if (!isMounted()) {
+              throw new Error("Asset fetch after panel was unmounted");
+            }
+            return await getMessagePipelineContext().fetchAsset(name);
+          }
+        : undefined,
 
       unsubscribeAll: () => {
         if (!isMounted()) {

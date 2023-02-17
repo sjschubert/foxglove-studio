@@ -6,8 +6,8 @@ import { McapIndexedReader, McapTypes } from "@mcap/core";
 
 import Logger from "@foxglove/log";
 import { ParsedChannel, parseChannel } from "@foxglove/mcap-support";
-import { Time, fromNanoSec, toNanoSec, compare, toDate } from "@foxglove/rostime";
-import { MessageEvent } from "@foxglove/studio";
+import { Time, fromNanoSec, toNanoSec, compare } from "@foxglove/rostime";
+import { Asset, AssetInfo, MessageEvent } from "@foxglove/studio";
 import {
   GetBackfillMessagesArgs,
   IIterableSource,
@@ -197,24 +197,30 @@ export class McapIndexedIterableSource implements IIterableSource {
     return messages;
   }
 
-  public async fetchAsset(
-    input: RequestInfo | URL,
-    init?: RequestInit | undefined,
-  ): Promise<Response> {
-    const url =
-      (input as Partial<Request>).url ?? (typeof input === "string" ? input : input.toString());
-    const attachments = this.reader.readAttachments({ name: url });
-    for await (const attachment of attachments) {
-      const lastModified = toDate(fromNanoSec(attachment.createTime));
-      return new Response(attachment.data, {
-        status: 200,
-        headers: new Headers({
-          "Content-Type": attachment.mediaType,
-          "Content-Length": attachment.data.byteLength.toString(),
-          "Last-Modified": lastModified.toUTCString(),
-        }),
+  public async listAssets(): Promise<AssetInfo[]> {
+    const assets: AssetInfo[] = [];
+    for await (const attachmentIndex of this.reader.attachmentIndexes) {
+      assets.push({
+        name: attachmentIndex.name,
+        mediaType: attachmentIndex.mediaType,
+        sizeInBytes: Number(attachmentIndex.dataSize),
+        lastModified: fromNanoSec(attachmentIndex.createTime),
       });
     }
-    return await fetch(input, init);
+    return assets;
+  }
+
+  public async fetchAsset(name: string): Promise<Asset> {
+    const attachments = this.reader.readAttachments({ name });
+    for await (const attachment of attachments) {
+      return {
+        name: attachment.name,
+        mediaType: attachment.mediaType,
+        sizeInBytes: attachment.data.byteLength,
+        lastModified: fromNanoSec(attachment.createTime),
+        data: attachment.data,
+      };
+    }
+    throw new Error(`Could not find asset in MCAP with name: ${name}`);
   }
 }

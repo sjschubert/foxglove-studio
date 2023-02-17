@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Time } from "@foxglove/rostime";
-import { MessageEvent } from "@foxglove/studio";
+import { Asset, AssetInfo, MessageEvent } from "@foxglove/studio";
 import { PlayerProblem, Topic, TopicStats } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 
@@ -176,14 +176,22 @@ export interface IIterableSource {
   getMessageCursor?: (args: MessageIteratorArgs & { abort?: AbortSignal }) => IMessageCursor;
 
   /**
-   * An optional method to support custom asset loading before falling back to the global `fetch()`
-   * method.
+   * An optional method to list available assets from a data source.
    *
    * Sources such as MCAP files that support embedded assets, or remote sources that support
-   * downloading assets can implement this method to provide custom asset loading. If a source
-   * cannot locate a particular asset, it should fall back to the global `fetch()` method.
+   * downloading assets can implement this method to provide a list of available assets.
    */
-  fetchAsset?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  listAssets?: () => Promise<AssetInfo[]>;
+
+  /**
+   * An optional method to support custom asset loading from data sources. The name is considered
+   * a unique identifier for the asset. If a data source has multiple assets with the same name,
+   * it must consistently return the same asset for the same name.
+   *
+   * Sources such as MCAP files that support embedded assets, or remote sources that support
+   * downloading assets can implement this method to provide custom asset loading.
+   */
+  fetchAsset?: (name: string) => Promise<Asset>;
 
   /**
    * Optional method a data source can implement to cleanup resources. The player will call this

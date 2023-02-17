@@ -123,6 +123,25 @@ export type MessageEvent<T> = Readonly<{
   originalMessageEvent?: MessageEvent<unknown>;
 }>;
 
+/**
+ * Information about an asset that can be loaded by the data source.
+ */
+export type AssetInfo = {
+  /** A unique identifier for this asset. */
+  name: string;
+  /** Asset size in bytes. */
+  sizeInBytes: number;
+  /** The type of asset. */
+  mediaType: string;
+  /** Last modified time of the asset. */
+  lastModified: Time;
+};
+
+/**
+ * An asset loaded from the data source.
+ */
+export type Asset = AssetInfo & { data: Uint8Array };
+
 export interface LayoutActions {
   /** Open a new panel or update an existing panel in the layout.  */
   addPanel(params: {
@@ -347,9 +366,16 @@ export type PanelExtensionContext = {
   callService?(service: string, request: unknown): Promise<unknown>;
 
   /**
-   * Fetch an asset from the current data source, falling back to the global `fetch()` method.
+   * List available assets that can be retrieved from the current data source.
+   * @returns A promise that resolves to an array of asset information.
    */
-  fetchAsset: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  listAssets?(): Promise<AssetInfo[]>;
+
+  /**
+   * Fetch an asset from the current data source. This method throws an exception
+   * if the asset is not available or fails to be retrieved.
+   */
+  fetchAsset?: (name: string) => Promise<Asset>;
 
   /**
    * Process render events for the panel. Each render event receives a render state and a done callback.

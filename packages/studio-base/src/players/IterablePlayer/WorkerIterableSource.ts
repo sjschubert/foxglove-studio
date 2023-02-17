@@ -5,7 +5,7 @@
 import * as Comlink from "comlink";
 
 import { abortSignalTransferHandler } from "@foxglove/comlink-transfer-handlers";
-import { MessageEvent, Time } from "@foxglove/studio";
+import { Asset, AssetInfo, MessageEvent, Time } from "@foxglove/studio";
 
 import type {
   GetBackfillMessagesArgs,
@@ -126,9 +126,20 @@ export class WorkerIterableSource implements IIterableSource {
     return cursor;
   }
 
-  public async fetchAsset(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const fetchAsset = this._worker?.fetchAsset ?? global.fetch;
-    return await fetchAsset(input, init);
+  public async listAssets(): Promise<AssetInfo[]> {
+    if (this._worker == undefined) {
+      throw new Error(`WorkerIterableSource is not initialized`);
+    }
+
+    return await this._worker.listAssets();
+  }
+
+  public async fetchAsset(name: string): Promise<Asset> {
+    if (this._worker == undefined) {
+      throw new Error(`WorkerIterableSource is not initialized`);
+    }
+
+    return await this._worker.fetchAsset(name);
   }
 
   public async terminate(): Promise<void> {
