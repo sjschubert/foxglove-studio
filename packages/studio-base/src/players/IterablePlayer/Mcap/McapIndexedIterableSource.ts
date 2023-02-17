@@ -198,8 +198,13 @@ export class McapIndexedIterableSource implements IIterableSource {
   }
 
   public async listAssets(): Promise<AssetInfo[]> {
+    const seenNames = new Set<string>();
     const assets: AssetInfo[] = [];
     for await (const attachmentIndex of this.reader.attachmentIndexes) {
+      if (seenNames.has(attachmentIndex.name)) {
+        continue;
+      }
+      seenNames.add(attachmentIndex.name);
       assets.push({
         name: attachmentIndex.name,
         mediaType: attachmentIndex.mediaType,
