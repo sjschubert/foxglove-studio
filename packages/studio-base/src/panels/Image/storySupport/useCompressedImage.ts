@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 import { useMemo } from "react";
+import Zfp from "wasm-zfp";
 
 import { NormalizedImageMessage } from "../types";
 
@@ -46,4 +47,42 @@ function useCompressedImage(): NormalizedImageMessage | undefined {
   }, [imageData]);
 }
 
-export { useCompressedImage };
+function useZfpCompressedImage(): NormalizedImageMessage | undefined {
+  const [imageData, setImageData] = React.useState<Uint8Array | undefined>();
+  React.useEffect(() => {
+    const width = 400;
+    const height = 300;
+    const int32Data = new Int32Array(width * height);
+    // Create a grayscale gradient from top-left to bottom-right
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        int32Data[y * width + x] = ((x + y) * 10000) / (width + height);
+      }
+    }
+
+    const zfpBuffer = Zfp.createBuffer();
+    const compressed = Zfp.compress(zfpBuffer, {
+      data: int32Data,
+      shape: [width, height, 0, 0],
+      dimensions: 2,
+    });
+    Zfp.freeBuffer(zfpBuffer);
+
+    setImageData(compressed);
+  }, []);
+
+  return useMemo(() => {
+    if (!imageData) {
+      return;
+    }
+
+    return {
+      type: "compressed",
+      stamp: { sec: 0, nsec: 0 },
+      format: "zfp",
+      data: imageData,
+    };
+  }, [imageData]);
+}
+
+export { useCompressedImage, useZfpCompressedImage };
