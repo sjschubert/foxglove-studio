@@ -2141,6 +2141,7 @@ __metadata:
   resolution: "@foxglove/den@workspace:packages/den"
   dependencies:
     async-mutex: 0.4.0
+    wasm-zfp: 3.0.0
     xacro-parser: 0.3.9
   languageName: unknown
   linkType: soft
@@ -2572,6 +2573,7 @@ __metadata:
     use-immer: 0.8.1
     use-pan-and-zoom: 0.6.5
     uuid: 9.0.0
+    wasm-zfp: 3.0.0
     webpack: 5.75.0
     xacro-parser: 0.3.9
     zustand: 4.3.2
@@ -25101,6 +25103,13 @@ __metadata:
   dependencies:
     makeerror: 1.0.12
   checksum: ad7a257ea1e662e57ef2e018f97b3c02a7240ad5093c392186ce0bcf1f1a60bbadd520d073b9beb921ed99f64f065efb63dfc8eec689a80e569f93c1c5d5e16c
+  languageName: node
+  linkType: hard
+
+"wasm-zfp@npm:3.0.0":
+  version: 3.0.0
+  resolution: "wasm-zfp@npm:3.0.0"
+  checksum: ff527548985e240fee34e5cdea49bf49ba1ede9136908ff487c12830185854f63234b0e6dcff2720938146807cae37c50ee6da10fe724c4e703e78d18a851a5a
   languageName: node
   linkType: hard
 

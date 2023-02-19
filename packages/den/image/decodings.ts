@@ -11,6 +11,31 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import Zfp, { ZfpType, ZfpBuffer, ZfpResult } from "wasm-zfp";
+
+// Used for normalizing >= 16 bit integer images. This default was taken from
+// ROS's image_view
+// References:
+// https://github.com/ros-perception/image_pipeline/blob/42266892502427eb566a4dffa61b009346491ce7/image_view/src/nodes/image_view.cpp#L80-L88
+// https://github.com/ros-visualization/rqt_image_view/blob/fe076acd265a05c11c04f9d04392fda951878f54/src/rqt_image_view/image_view.cpp#L582
+// https://github.com/ros-visualization/rviz/blob/68b464fb6571b8760f91e8eca6fb933ba31190bf/src/rviz/image/ros_image_texture.cpp#L114
+const DEFAULT_MAX = 10000;
+
+// The set of image formats that can natively be rendered in the browser
+export const BROWSER_IMAGE_FORMATS = new Set([
+  "apng",
+  "avif",
+  "gif",
+  "jpeg",
+  "png",
+  "svg+xml",
+  "webp",
+]);
+
+// Global buffer for decompressing zfp images. This is a pointer to a malloc()
+// in the wasm-zfp WASM heap for a ZfpBuffer struct
+let zfpBuffer: ZfpBuffer | undefined;
+
 function yuvToRGBA8(
   y1: number,
   u: number,
@@ -212,13 +237,9 @@ export function decodeMono16(
 ): void {
   const view = new DataView(mono16.buffer, mono16.byteOffset);
 
-  // Use user-provided max/min values, or default to 0-10000, consistent with image_view's default.
-  // References:
-  // https://github.com/ros-perception/image_pipeline/blob/42266892502427eb566a4dffa61b009346491ce7/image_view/src/nodes/image_view.cpp#L80-L88
-  // https://github.com/ros-visualization/rqt_image_view/blob/fe076acd265a05c11c04f9d04392fda951878f54/src/rqt_image_view/image_view.cpp#L582
-  // https://github.com/ros-visualization/rviz/blob/68b464fb6571b8760f91e8eca6fb933ba31190bf/src/rviz/image/ros_image_texture.cpp#L114
+  // Use user-provided max/min values, or default to [0, DEFAULT_MAX]
   const minValue = options?.minValue ?? 0;
-  let maxValue = options?.maxValue ?? 10000;
+  let maxValue = options?.maxValue ?? DEFAULT_MAX;
   if (maxValue === minValue) {
     maxValue = minValue + 1;
   }
@@ -310,3 +331,98 @@ export const decodeBayerRGGB8 = makeSpecializedDecodeBayer("r", "g0", "g1", "b")
 export const decodeBayerBGGR8 = makeSpecializedDecodeBayer("b", "g0", "g1", "r");
 export const decodeBayerGBRG8 = makeSpecializedDecodeBayer("g0", "b", "r", "g1");
 export const decodeBayerGRBG8 = makeSpecializedDecodeBayer("g0", "r", "b", "g1");
+
+/**
+ * Decodes ZFP-compressed data into RGBA data.
+ * @param compressed ZFP compressed data. Must begin with a full ZFP header.
+ * @param output An object containing the output buffer. The buffer will be
+ *   reallocated if it is not the correct size.
+ * @returns An object describing the decoded data, including numeric type and
+ *   dimensions.
+ */
+export async function decodeZfp(
+  compressed: Uint8Array,
+  output: { data: Uint8ClampedArray },
+  options: { minValue?: number; maxValue?: number } = {},
+): Promise<ZfpResult> {
+  await Zfp.isLoaded;
+  zfpBuffer ??= Zfp.createBuffer();
+
+  const zfpResult = Zfp.decompress(zfpBuffer, compressed);
+  if (zfpResult.dimensions !== 2) {
+    throw new Error("Zfp decompression only supports 2D images");
+  }
+
+  const width = zfpResult.shape[0];
+  const height = zfpResult.shape[1];
+  if (zfpResult.data.length !== width * height) {
+    throw new Error(
+      `Zfp decompression returned ${zfpResult.data.length} values (${zfpResult.data.byteLength} bytes), expected ${width}x${height}`,
+    );
+  }
+
+  const byteLength = width * height * 4;
+  if (output.data.length !== byteLength) {
+    output.data = new Uint8ClampedArray(byteLength);
+  }
+  const imgData = output.data;
+  const type = zfpResult.type;
+  const size = width * height;
+
+  // Convert the decompressed single-channel data to RGBA
+  expandZfpResult(imgData, zfpResult.data, type, size, options);
+
+  return zfpResult;
+}
+
+function expandZfpResult(
+  output: Uint8ClampedArray,
+  typedArray: ZfpResult["data"],
+  type: ZfpResult["type"],
+  size: number,
+  options: { minValue?: number; maxValue?: number },
+) {
+  const { minValue = 0, maxValue = DEFAULT_MAX } = options;
+  const invDiff = 1 / (maxValue - minValue);
+  const hasRange = options.maxValue != undefined;
+
+  const fillPixels = (i: number, r: number) => {
+    const j = i * 4;
+    output[j + 0] = r;
+    output[j + 1] = r;
+    output[j + 2] = r;
+    output[j + 3] = 255;
+  };
+
+  switch (type) {
+    case ZfpType.INT32:
+    case ZfpType.INT64: {
+      const data = typedArray as Int32Array | BigInt64Array;
+      for (let i = 0; i < size; i++) {
+        const value = ((Number(data[i]) - minValue) * invDiff * 255) | 0;
+        fillPixels(i, value);
+      }
+      break;
+    }
+    case ZfpType.FLOAT:
+    case ZfpType.DOUBLE: {
+      const data = typedArray as Float32Array | Float64Array;
+      if (hasRange) {
+        for (let i = 0; i < size; i++) {
+          const value = ((data[i]! - minValue) * invDiff * 255) | 0;
+          fillPixels(i, value);
+        }
+        break;
+      } else {
+        // Assume the data is in the range [0, 1]
+        for (let i = 0; i < size; i++) {
+          const value = (data[i]! * 255) | 0;
+          fillPixels(i, value);
+        }
+      }
+      break;
+    }
+    default:
+      throw new Error(`Unsupported ZFP type: ${type}`);
+  }
+}

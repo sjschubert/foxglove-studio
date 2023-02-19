@@ -20,6 +20,8 @@ import {
   decodeMono8,
   decodeMono16,
   decodeYUYV,
+  decodeZfp,
+  BROWSER_IMAGE_FORMATS,
 } from "@foxglove/den/image";
 import Logger from "@foxglove/log";
 import { toNanoSec } from "@foxglove/rostime";
@@ -92,6 +94,10 @@ export type ImageUserData = BaseUserData & {
 };
 
 export class ImageRenderable extends Renderable<ImageUserData> {
+  // A cache for decompressed image data, where the size is not known ahead of
+  // time and may change between messages.
+  public imageDataCache = { data: new Uint8ClampedArray(0) };
+
   public override dispose(): void {
     this.userData.texture?.dispose();
     this.userData.material?.dispose();
@@ -400,29 +406,32 @@ export class Images extends SceneExtension<ImageRenderable> {
 
     // Create or update the bitmap texture
     if ("format" in image) {
-      const bitmapData = new Blob([image.data], { type: `image/${image.format}` });
-      self
-        .createImageBitmap(bitmapData, { resizeWidth: DEFAULT_IMAGE_WIDTH })
-        .then((bitmap) => {
-          if (renderable.userData.texture == undefined) {
-            renderable.userData.texture = createCanvasTexture(bitmap);
-            rebuildMaterial(renderable);
-            tryCreateMesh(renderable, this.renderer);
-          } else {
-            renderable.userData.texture.image.close();
-            renderable.userData.texture.image = bitmap;
-            renderable.userData.texture.needsUpdate = true;
-          }
+      if (BROWSER_IMAGE_FORMATS.has(image.format)) {
+        const bitmapData = new Blob([image.data], { type: `image/${image.format}` });
+        self
+          .createImageBitmap(bitmapData, { resizeWidth: DEFAULT_IMAGE_WIDTH })
+          .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
+          .catch((err) => this._handleTopicError(topic, err as Error));
+      } else if (image.format === "zfp") {
+        const cache = renderable.imageDataCache;
 
-          this.renderer.settings.errors.removeFromTopic(topic, CREATE_BITMAP_ERR);
-        })
-        .catch((err) => {
-          this.renderer.settings.errors.addToTopic(
-            topic,
-            CREATE_BITMAP_ERR,
-            `createBitmap failed: ${err.message}`,
-          );
-        });
+        decodeZfp(image.data, cache)
+          // Potentially performance-sensitive; await can be expensive
+          // eslint-disable-next-line @typescript-eslint/promise-function-async
+          .then((zfpResult) => {
+            const width = zfpResult.shape[0];
+            const height = zfpResult.shape[1];
+            const imageData = new ImageData(renderable.imageDataCache.data, width, height);
+            return self.createImageBitmap(imageData, { resizeWidth: DEFAULT_IMAGE_WIDTH });
+          })
+          .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
+          .catch((err) => this._handleTopicError(topic, err as Error));
+      } else {
+        this._handleTopicError(
+          topic,
+          new Error(`Unsupported compressed image format: ${image.format}`),
+        );
+      }
     } else {
       const { width, height } = image;
       const prevTexture = renderable.userData.texture as THREE.DataTexture | undefined;
@@ -450,6 +459,29 @@ export class Images extends SceneExtension<ImageRenderable> {
     // Create/recreate the mesh if needed
     tryCreateMesh(renderable, this.renderer);
   }
+
+  private _updateImageBitmap = (renderable: ImageRenderable, bitmap: ImageBitmap): void => {
+    const { texture, topic } = renderable.userData;
+    if (texture == undefined) {
+      renderable.userData.texture = createCanvasTexture(bitmap);
+      rebuildMaterial(renderable);
+      tryCreateMesh(renderable, this.renderer);
+    } else {
+      texture.image.close();
+      texture.image = bitmap;
+      texture.needsUpdate = true;
+    }
+
+    this.renderer.settings.errors.removeFromTopic(topic, CREATE_BITMAP_ERR);
+  };
+
+  private _handleTopicError = (topic: string, err: Error): void => {
+    this.renderer.settings.errors.addToTopic(
+      topic,
+      CREATE_BITMAP_ERR,
+      `createBitmap failed: ${err.message}`,
+    );
+  };
 
   private _getImageRenderable(
     imageTopic: string,

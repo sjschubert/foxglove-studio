@@ -26,6 +26,8 @@ import {
   decodeBayerGRBG8,
   decodeMono8,
   decodeMono16,
+  decodeZfp,
+  BROWSER_IMAGE_FORMATS,
 } from "@foxglove/den/image";
 import { Color, Point2D } from "@foxglove/studio-base/types/Messages";
 import sendNotification from "@foxglove/studio-base/util/sendNotification";
@@ -50,6 +52,10 @@ import type {
 // Just globally keep track of if we've shown an error in rendering, since typically when you get
 // one error, you'd then get a whole bunch more, which is spammy.
 let hasLoggedCameraModelError: boolean = false;
+
+// A cache for decompressed image data, where the size is not known ahead of
+// time and may change between messages.
+const imageDataCache = { data: new Uint8ClampedArray(0) };
 
 // Size threshold below which we do fast point rendering as rects.
 // Empirically 3 seems like a good threshold here.
@@ -129,8 +135,21 @@ function decodeMessageToBitmap(
 
   switch (imageMessage.type) {
     case "compressed": {
-      const image = new Blob([rawData], { type: `image/${imageMessage.format}` });
-      return self.createImageBitmap(image);
+      if (BROWSER_IMAGE_FORMATS.has(imageMessage.format)) {
+        const image = new Blob([rawData], { type: `image/${imageMessage.format}` });
+        return self.createImageBitmap(image);
+      } else if (imageMessage.format === "zfp") {
+        // Potentially performance-sensitive; await can be expensive
+        // eslint-disable-next-line @typescript-eslint/promise-function-async
+        return decodeZfp(imageMessage.data, imageDataCache, options).then((zfpResult) => {
+          const width = zfpResult.shape[0];
+          const height = zfpResult.shape[1];
+          const image = new ImageData(imageDataCache.data, width, height);
+          return self.createImageBitmap(image);
+        });
+      } else {
+        throw new Error(`Unsupported compressed image format: ${imageMessage.format}`);
+      }
     }
     case "raw": {
       const { is_bigendian, width, height, encoding } = imageMessage;
