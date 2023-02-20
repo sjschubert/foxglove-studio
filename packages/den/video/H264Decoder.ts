@@ -6,24 +6,10 @@ import EventEmitter from "eventemitter3";
 
 import { Bitstream, NALUStream, NaluStreamInfo, NaluType, SPS } from "./h264Utils";
 
-export async function drawH264ToCanvas(
-  output: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  data: Uint8Array,
-  timestampMicros: number,
-  decoder: H264Decoder,
-): Promise<void> {
-  const frame = await decoder.decode(data, timestampMicros);
-  if (!frame) {
-    return undefined;
-  }
-
-  output.drawImage(frame, 0, 0);
-
-  frame.close();
-}
-
 export type H264DecoderEventTypes = {
+  frame: (frame: VideoFrame) => void;
   debug: (message: string) => void;
+  warn: (message: string) => void;
   error: (error: Error) => void;
 };
 
@@ -31,17 +17,20 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
   #decoder: VideoDecoder;
   #naluStreamInfo: NaluStreamInfo | undefined;
   #videoDecoderConfig: VideoDecoderConfig | undefined;
+  #hasKeyframe = false;
+  #decoding: Promise<void> | undefined;
   #pendingFrame: VideoFrame | undefined;
+  #timestamp = 0;
 
   public static isSupported(): boolean {
-    return "VideoDecoder" in window;
+    return self.isSecureContext && "VideoDecoder" in globalThis;
   }
 
   public constructor() {
     super();
     this.#decoder = new VideoDecoder({
       error: (error) => this.emit("error", error),
-      output: (frame) => (this.#pendingFrame = frame),
+      output: (frame) => this.emit("frame", frame),
     });
   }
 
@@ -56,14 +45,25 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
    * @returns A VideoFrame or undefined if no frame was decoded
    */
   public async decode(data: Uint8Array, timestampMicros: number): Promise<VideoFrame | undefined> {
+    if (this.#decoding) {
+      await this.#decoding;
+    }
+
     if (this.#decoder.state === "closed") {
-      this.emit("error", new Error("VideoDecoder is closed"));
-      return undefined;
+      this.emit("warn", "VideoDecoder is closed, creating a new one");
+      this.#decoder = new VideoDecoder({
+        error: (error) => this.emit("error", error),
+        output: (frame) => this.emit("frame", frame),
+      });
     }
 
     // Convert the data to Annex B format if necessary
     const annexBFrame = this._getAnnexBFrame(data);
     if (!annexBFrame) {
+      this.emit(
+        "error",
+        new Error(`Unable to convert ${data.byteLength} byte bitstream to Annex B format`),
+      );
       return undefined;
     }
 
@@ -71,39 +71,72 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
     if (this.#decoder.state === "unconfigured") {
       const decoderConfig = this._getDecoderConfig(annexBFrame);
       if (decoderConfig != undefined) {
+        this.emit("debug", `Configuring VideoDecoder with ${JSON.stringify(decoderConfig)}`);
         this.#decoder.configure(decoderConfig);
       }
     }
 
     if (this.#decoder.state !== "configured") {
-      return;
-    }
-
-    const chunk = new EncodedVideoChunk({
-      type: hasKeyFrame(annexBFrame) ? "key" : "delta",
-      data: annexBFrame,
-      timestamp: timestampMicros,
-    });
-
-    try {
-      this.#decoder.decode(chunk);
-    } catch (unk) {
-      const err = unk as Error;
-      this.emit(
-        "error",
-        new Error(
-          `Failed to decode ${data.byteLength} chunk at time ${timestampMicros}: ${err.message}`,
-        ),
-      );
+      this.emit("warn", `VideoDecoder is in state ${this.#decoder.state}, skipping frame`);
       return undefined;
     }
 
-    await this.#decoder.flush();
+    const type = isKeyFrame(annexBFrame) ? "key" : "delta";
+    if (!this.#hasKeyframe) {
+      if (type === "key") {
+        this.#hasKeyframe = true;
+      } else {
+        this.emit("debug", `Skipping non-keyframe before keyframe`);
+        return undefined;
+      }
+    }
 
-    // Return the most recently decoded frame if one is available
-    const frame = this.#pendingFrame;
+    this.#decoding = new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        this.emit(
+          "warn",
+          `Timed out decoding ${data.byteLength} byte chunk at time ${timestampMicros}`,
+        );
+        resolve(undefined);
+      }, 30);
+      this.once("frame", (videoFrame) => {
+        this.emit(
+          "debug",
+          `Decoded ${data.byteLength} byte ${type} chunk at time ${timestampMicros} to ${videoFrame.displayWidth}x${videoFrame.displayHeight} ${videoFrame.format}`,
+        );
+        clearTimeout(timeoutId);
+        if (this.#pendingFrame) {
+          this.#pendingFrame.close();
+        }
+        this.#pendingFrame = videoFrame;
+        resolve();
+      });
+
+      try {
+        this.#decoder.decode(
+          new EncodedVideoChunk({
+            type,
+            data: annexBFrame,
+            timestamp: this.#timestamp++, //timestampMicros,
+          }),
+        );
+      } catch (unk) {
+        const err = unk as Error;
+        this.emit(
+          "error",
+          new Error(
+            `Failed to decode ${data.byteLength} byte chunk at time ${timestampMicros}: ${err.message}`,
+          ),
+        );
+      }
+    });
+
+    await this.#decoding;
+    this.#decoding = undefined;
+
+    const maybeVideoFrame = this.#pendingFrame;
     this.#pendingFrame = undefined;
-    return frame;
+    return maybeVideoFrame;
   }
 
   /**
@@ -156,7 +189,7 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
    */
   private _getNaluStreamInfo(data: Uint8Array): NaluStreamInfo | undefined {
     if (!this.#naluStreamInfo) {
-      this.#naluStreamInfo = identifyNaluStreamInfo(data);
+      this.#naluStreamInfo = this._identifyNaluStreamInfo(data);
       if (this.#naluStreamInfo) {
         const { type, boxSize } = this.#naluStreamInfo;
         this.emit("debug", `Stream identified as ${type} with box size: ${boxSize}`);
@@ -191,7 +224,6 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
             codec: sps.MIME,
             codedHeight: sps.picHeight,
             codedWidth: sps.picWidth,
-            hardwareAcceleration: "prefer-hardware",
             optimizeForLatency: true,
           };
           return this.#videoDecoderConfig;
@@ -205,21 +237,23 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
 
     return undefined;
   }
-}
 
-function identifyNaluStreamInfo(buffer: Uint8Array): NaluStreamInfo | undefined {
-  try {
-    const stream = new NALUStream(buffer, { strict: true, type: "unknown" });
-    if (stream.type && stream.type !== "unknown" && stream.boxSize != undefined) {
-      return { type: stream.type, boxSize: stream.boxSize };
+  private _identifyNaluStreamInfo(buffer: Uint8Array): NaluStreamInfo | undefined {
+    try {
+      const stream = new NALUStream(buffer, { strict: true });
+      if (stream.type && stream.type !== "unknown" && stream.boxSize != undefined) {
+        return { type: stream.type, boxSize: stream.boxSize };
+      }
+      this.emit("error", new Error(`Unable to identify NALU stream`));
+    } catch (unk) {
+      const err = unk as Error;
+      this.emit("error", new Error(`Unable to identify NALU stream: ${err.message}`));
     }
-  } catch (err) {
-    // Ignore errors
+    return undefined;
   }
-  return undefined;
 }
 
-function hasKeyFrame(annexBFrame: Uint8Array): boolean {
+function isKeyFrame(annexBFrame: Uint8Array): boolean {
   const stream = new NALUStream(annexBFrame, { type: "annexB" });
   for (const nalu of stream.nalus()) {
     if (!nalu) {

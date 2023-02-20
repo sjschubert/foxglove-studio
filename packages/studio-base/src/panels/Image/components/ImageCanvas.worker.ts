@@ -99,6 +99,7 @@ class ImageCanvasWorker {
           imageMessage,
           options,
           rawMarkerData,
+          startTime: args.startTime,
         }).then((dimensions) => (render.dimensions = dimensions));
       },
     );

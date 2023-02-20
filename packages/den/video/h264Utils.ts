@@ -40,6 +40,8 @@ export const chromaFormatValues = {
   3: "YUV444",
 };
 
+const VALID_STREAM_TYPES = new Set(["packet", "annexB", "unknown"]);
+
 // noinspection DuplicatedCode
 /**
  * Tools for handling general bitstream issues.
@@ -530,7 +532,6 @@ export class Bitstream extends RawBitstream {
 type NextPackageResult = { n: number; s: number; e: number; message?: string };
 
 export class NALUStream {
-  validTypes: Set<string>;
   strict: boolean;
   type: StreamType | undefined;
   buf: Uint8Array;
@@ -552,9 +553,13 @@ export class NALUStream {
    */
   constructor(
     buf: Uint8Array,
-    options: { strict?: boolean; boxSize?: number; boxSizeMinusOne?: number; type: StreamType },
+    options: {
+      strict?: boolean;
+      boxSize?: number;
+      boxSizeMinusOne?: number;
+      type?: StreamType;
+    } = {},
   ) {
-    this.validTypes = new Set(["packet", "annexB", "unknown"]);
     this.strict = false;
     this.type = undefined;
     //   this.buf = undefined;
@@ -572,10 +577,8 @@ export class NALUStream {
       if (options.boxSize) {
         this.boxSize = options.boxSize;
       }
-      if (options.type) {
-        this.type = options.type;
-      }
-      if (this.type && !this.validTypes.has(this.type)) {
+      this.type = options.type;
+      if (this.type && !VALID_STREAM_TYPES.has(this.type)) {
         throw new Error("NALUStream error: type must be packet or annexB");
       }
     }
@@ -795,14 +798,11 @@ export class NALUStream {
   }
 
   iterate(callback: ((buf: Uint8Array, s: number, e: number) => void) | undefined = undefined) {
-    if (this.type === "unknown") {
-      return 0;
-    }
-    if (this.boxSize! < 1) {
+    if (this.type === "unknown" || this.boxSize == undefined || this.boxSize < 1) {
       return 0;
     }
     let packetCount = 0;
-    let delim = this.nextPacket?.(this.buf, 0, this.boxSize!) ?? { n: 0, s: 0, e: 0 };
+    let delim = this.nextPacket?.(this.buf, 0, this.boxSize) ?? { n: 0, s: 0, e: 0 };
     while (true) {
       if (delim.e > delim.s) {
         packetCount++;
@@ -813,7 +813,7 @@ export class NALUStream {
       if (delim.n < 0) {
         break;
       }
-      delim = this.nextPacket?.(this.buf, delim.n, this.boxSize!) ?? { n: 0, s: 0, e: 0 };
+      delim = this.nextPacket?.(this.buf, delim.n, this.boxSize) ?? { n: 0, s: 0, e: 0 };
     }
     return packetCount;
   }

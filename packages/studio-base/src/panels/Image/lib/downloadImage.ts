@@ -34,6 +34,7 @@ export async function downloadImage(
       maxValue: config.maxValue,
       resizeCanvas: true,
     },
+    startTime: normalizedImageMessage.stamp,
   });
 
   if (!dimensions) {

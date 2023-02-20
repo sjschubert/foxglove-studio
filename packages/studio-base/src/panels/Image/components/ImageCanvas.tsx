@@ -18,6 +18,7 @@ import { makeStyles } from "tss-react/mui";
 import usePanZoom from "use-pan-and-zoom";
 import { v4 as uuidv4 } from "uuid";
 
+import { Time } from "@foxglove/rostime";
 import KeyListener from "@foxglove/studio-base/components/KeyListener";
 import { Topic } from "@foxglove/studio-base/players/types";
 import Rpc from "@foxglove/studio-base/util/Rpc";
@@ -41,6 +42,7 @@ type Props = {
   topic?: Topic;
   image?: NormalizedImageMessage;
   rawMarkerData: RawMarkerData;
+  startTime: Time | undefined;
   config: Config;
   saveConfig: (config: Partial<Config>) => void;
   onStartRenderImage: () => OnFinishRenderImage;
@@ -172,7 +174,7 @@ export function ImageCanvas(props: Props): JSX.Element {
       // Potentially performance-sensitive; await can be expensive
       // eslint-disable-next-line @typescript-eslint/promise-function-async
       const workerRender: RenderImage = (args) => {
-        const { geometry, imageMessage, options, rawMarkerData: rawMarkers } = args;
+        const { geometry, imageMessage, options, rawMarkerData: rawMarkers, startTime } = args;
 
         return worker.send<Dimensions | undefined, RenderArgs & { id: string }>("renderImage", {
           geometry,
@@ -180,6 +182,7 @@ export function ImageCanvas(props: Props): JSX.Element {
           imageMessage,
           options,
           rawMarkerData: rawMarkers,
+          startTime,
         });
       };
 
@@ -241,6 +244,8 @@ export function ImageCanvas(props: Props): JSX.Element {
     };
   }, [config.minValue, config.maxValue, config.smooth]);
 
+  const startTime = props.startTime;
+
   const devicePixelRatio = window.devicePixelRatio;
   const { error: renderError } = useAsync(async () => {
     if (!canvas || !doRenderImage) {
@@ -278,6 +283,7 @@ export function ImageCanvas(props: Props): JSX.Element {
         imageMessage: normalizedImageMessage,
         rawMarkerData,
         options: renderOptions,
+        startTime: startTime ?? { sec: 0, nsec: 0 },
       });
     } finally {
       finishRender();
@@ -297,6 +303,7 @@ export function ImageCanvas(props: Props): JSX.Element {
     rawMarkerData,
     renderOptions,
     scaleValue,
+    startTime,
     width,
     zoomMode,
   ]);

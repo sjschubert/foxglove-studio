@@ -20,6 +20,7 @@ import { useUpdateEffect } from "react-use";
 import { DeepPartial } from "ts-essentials";
 import { makeStyles } from "tss-react/mui";
 
+import { Time } from "@foxglove/rostime";
 import { PanelExtensionContext, SettingsTreeAction, Subscription, Topic } from "@foxglove/studio";
 import {
   PanelContextMenu,
@@ -168,6 +169,7 @@ export function ImageView({ context }: Props): JSX.Element {
   }, [cameraTopicFullObject, cameraInfoTopicFullObject, enabledMarkerTopicsFullObjects]);
 
   const [colorScheme, setColorScheme] = useState<"dark" | "light">("light");
+  const [startTime, setStartTime] = useState<Time | undefined>();
 
   useEffect(() => {
     context.saveState(config);
@@ -177,6 +179,7 @@ export function ImageView({ context }: Props): JSX.Element {
     context.watch("topics");
     context.watch("didSeek");
     context.watch("currentFrame");
+    context.watch("timeRange");
     context.watch("colorScheme");
   }, [context]);
   useEffect(() => {
@@ -202,6 +205,9 @@ export function ImageView({ context }: Props): JSX.Element {
         }
         if (renderState.currentFrame) {
           actions.setCurrentFrame(renderState.currentFrame);
+        }
+        if (renderState.timeRange) {
+          setStartTime(renderState.timeRange[0]);
         }
         if (renderState.colorScheme) {
           setColorScheme(renderState.colorScheme);
@@ -421,6 +427,7 @@ export function ImageView({ context }: Props): JSX.Element {
             saveConfig={saveConfigWithMerging}
             onStartRenderImage={onStartRenderImage}
             setActivePixelData={setActivePixelData}
+            startTime={startTime}
           />
           {/* If rendered, EmptyState will hide the always-present ImageCanvas */}
           {!image && (

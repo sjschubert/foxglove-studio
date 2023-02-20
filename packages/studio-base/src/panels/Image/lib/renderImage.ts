@@ -29,6 +29,9 @@ import {
   decodeZfp,
   BROWSER_IMAGE_FORMATS,
 } from "@foxglove/den/image";
+import { H264Decoder } from "@foxglove/den/video";
+import Log from "@foxglove/log";
+import { Time, toMicroSec } from "@foxglove/rostime";
 import { Color, Point2D } from "@foxglove/studio-base/types/Messages";
 import sendNotification from "@foxglove/studio-base/util/sendNotification";
 
@@ -49,6 +52,8 @@ import type {
   NormalizedImageMessage,
 } from "../types";
 
+const log = Log.getLogger(__filename);
+
 // Just globally keep track of if we've shown an error in rendering, since typically when you get
 // one error, you'd then get a whole bunch more, which is spammy.
 let hasLoggedCameraModelError: boolean = false;
@@ -56,6 +61,8 @@ let hasLoggedCameraModelError: boolean = false;
 // A cache for decompressed image data, where the size is not known ahead of
 // time and may change between messages.
 const imageDataCache = { data: new Uint8ClampedArray(0) };
+
+let h264Decoder: H264Decoder | undefined;
 
 // Size threshold below which we do fast point rendering as rects.
 // Empirically 3 seems like a good threshold here.
@@ -69,6 +76,7 @@ export async function renderImage({
   imageMessage,
   rawMarkerData,
   options,
+  startTime,
 }: RenderArgs & { canvas: RenderableCanvas; hitmapCanvas: RenderableCanvas | undefined }): Promise<
   RenderDimensions | undefined
 > {
@@ -90,7 +98,7 @@ export async function renderImage({
   }
 
   try {
-    const bitmap = await decodeMessageToBitmap(imageMessage, options);
+    const bitmap = await decodeMessageToBitmap(imageMessage, startTime, options);
 
     if (options?.resizeCanvas === true) {
       canvas.width = bitmap.width;
@@ -126,6 +134,7 @@ function maybeUnrectifyPixel(cameraModel: PinholeCameraModel | undefined, point:
 // eslint-disable-next-line @typescript-eslint/promise-function-async
 function decodeMessageToBitmap(
   imageMessage: NormalizedImageMessage,
+  startTime: Time,
   options: RenderOptions = {},
 ): Promise<ImageBitmap> {
   const { data: rawData } = imageMessage;
@@ -136,9 +145,35 @@ function decodeMessageToBitmap(
   switch (imageMessage.type) {
     case "compressed": {
       if (BROWSER_IMAGE_FORMATS.has(imageMessage.format)) {
+        // The browser can decode this image format natively. Pass the compressed data directly to
+        // createImageBitmap
         const image = new Blob([rawData], { type: `image/${imageMessage.format}` });
         return self.createImageBitmap(image);
+      } else if (imageMessage.format.startsWith("h264")) {
+        // Use the H264Decoder (WebCodecs) to decode video data to frames then convert to an
+        // ImageBitmap
+        if (!h264Decoder) {
+          if (!H264Decoder.isSupported()) {
+            throw new Error("H.264 decoding is not supported in this browser");
+          }
+          h264Decoder = new H264Decoder();
+          h264Decoder.on("error", log.error.bind(log));
+          h264Decoder.on("warn", log.warn.bind(log));
+          h264Decoder.on("debug", log.debug.bind(log));
+        }
+        const startMicroSec = toMicroSec(startTime);
+        const timestampMicroSec = (toMicroSec(imageMessage.stamp) - startMicroSec) | 0;
+        return h264Decoder.decode(rawData, timestampMicroSec).then(async (videoFrame) => {
+          if (!videoFrame) {
+            return await self.createImageBitmap(new ImageData(4, 4));
+          }
+          const imageBitmap = await self.createImageBitmap(videoFrame, 0, 0, 1920, 1080);
+          videoFrame.close();
+          return imageBitmap;
+        });
       } else if (imageMessage.format === "zfp") {
+        // Use the ZFP decoder to decompress single channel image data
+        //
         // Potentially performance-sensitive; await can be expensive
         // eslint-disable-next-line @typescript-eslint/promise-function-async
         return decodeZfp(imageMessage.data, imageDataCache, options).then((zfpResult) => {
@@ -155,14 +190,10 @@ function decodeMessageToBitmap(
       const { is_bigendian, width, height, encoding } = imageMessage;
       const image = new ImageData(width, height);
       switch (encoding) {
-        case "yuv422":
-          decodeYUV(rawData as unknown as Int8Array, width, height, image.data);
-          break;
-        // same thing as yuv422, but a distinct decoding from yuv422 and yuyv
+        case "yuv422": // deprecated alias for uyuv
         case "uyuv":
           decodeYUV(rawData as unknown as Int8Array, width, height, image.data);
           break;
-        // change name in the future
         case "yuyv":
           decodeYUYV(rawData as unknown as Int8Array, width, height, image.data);
           break;
@@ -303,7 +334,8 @@ function render({
     ctx.restore();
   }
 
-  return { ...bitmapDimensions, transform };
+  const { width, height } = bitmapDimensions;
+  return { width, height, transform };
 }
 
 function paintMarkers(
