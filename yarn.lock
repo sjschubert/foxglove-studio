@@ -2140,7 +2140,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@foxglove/den@workspace:packages/den"
   dependencies:
+    "@types/dom-webcodecs": 0.1.5
     async-mutex: 0.4.0
+    eventemitter3: 5.0.0
     xacro-parser: 0.3.9
   languageName: unknown
   linkType: soft
@@ -6150,6 +6152,13 @@ __metadata:
   dependencies:
     "@types/ms": "*"
   checksum: 0a7b89d8ed72526858f0b61c6fd81f477853e8c4415bb97f48b1b5545248d2ae389931680b94b393b993a7cfe893537a200647d93defe6d87159b96812305adc
+  languageName: node
+  linkType: hard
+
+"@types/dom-webcodecs@npm:0.1.5":
+  version: 0.1.5
+  resolution: "@types/dom-webcodecs@npm:0.1.5"
+  checksum: 181eaa1356ee9f6d3df68e11e9de95a2759c2b4b2a5ba2a49ccebd0dc128126a1f7a3397db2748a03a3e16f4a9317bf82d07e15fc3fb7356b368009f5a72b129
   languageName: node
   linkType: hard
 
