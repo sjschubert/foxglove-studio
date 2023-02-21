@@ -494,9 +494,12 @@ function paintPointsAnnotation(
       break;
     }
     case "line_list": {
-      const hasExactColors = annotation.outlineColors.length === annotation.points.length / 2;
+      // Round annotation.points.length down to the nearest even number
+      const pointsCount = annotation.points.length - (annotation.points.length % 2);
 
-      for (let i = 0; i < annotation.points.length; i += 2) {
+      const hasExactColors = annotation.outlineColors.length === pointsCount / 2;
+
+      for (let i = 0; i < pointsCount; i += 2) {
         // Support the case where outline_colors is half the length of points,
         // one color per line, and where outline_colors matches the length of
         // points (although we only use the first color in this case). Fall back
