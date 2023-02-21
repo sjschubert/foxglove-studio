@@ -24,7 +24,6 @@ export default {
       delay: 100,
     },
     colorScheme: "dark",
-    useReadySignal: true,
   },
 };
 
@@ -138,17 +137,10 @@ export const MarkersWithRotations: Story = (_args) => {
 export const ZfpImage: Story = (_args) => {
   const imageMessage = useZfpCompressedImage();
   const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
+  const readySignal = useReadySignal();
 
   const width = 400;
   const height = 300;
-
-  // When imageMessage becomes defined, signal that the story is ready
-  const readySignal = useReadySignal();
-  useEffect(() => {
-    if (imageMessage) {
-      readySignal();
-    }
-  }, [imageMessage, readySignal]);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -175,14 +167,21 @@ export const ZfpImage: Story = (_args) => {
         cameraInfo,
         transformMarkers: true,
       },
+    }).then(() => {
+      if (imageMessage) {
+        readySignal();
+      }
     });
-  }, [imageMessage]);
+  }, [imageMessage, readySignal]);
 
   return (
     <div style={{ backgroundColor: "white", padding: "1rem" }}>
       <canvas ref={canvasRef} style={{ width, height }} />
     </div>
   );
+};
+ZfpImage.parameters = {
+  useReadySignal: true,
 };
 
 export function FoxgloveAnnotations(): JSX.Element {
