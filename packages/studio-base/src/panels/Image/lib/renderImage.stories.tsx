@@ -19,7 +19,7 @@ export default {
   title: "panels/Image/renderImage",
   parameters: {
     chromatic: {
-      delay: 1000,
+      delay: 3000,
     },
     colorScheme: "dark",
   },
