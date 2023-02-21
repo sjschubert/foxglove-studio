@@ -5,6 +5,8 @@
 import { Story } from "@storybook/react";
 import { useEffect, useMemo, useRef } from "react";
 
+import { useReadySignal } from "@foxglove/studio-base/stories/ReadySignalContext";
+
 import { normalizeAnnotations } from "./normalizeAnnotations";
 import { renderImage } from "./renderImage";
 import {
@@ -19,9 +21,10 @@ export default {
   title: "panels/Image/renderImage",
   parameters: {
     chromatic: {
-      delay: 3000,
+      delay: 100,
     },
     colorScheme: "dark",
+    useReadySignal: true,
   },
 };
 
@@ -138,6 +141,14 @@ export const ZfpImage: Story = (_args) => {
 
   const width = 400;
   const height = 300;
+
+  // When imageMessage becomes defined, signal that the story is ready
+  const readySignal = useReadySignal();
+  useEffect(() => {
+    if (imageMessage) {
+      readySignal();
+    }
+  }, [imageMessage, readySignal]);
 
   useEffect(() => {
     if (!canvasRef.current) {
