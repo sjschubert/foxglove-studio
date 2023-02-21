@@ -561,26 +561,23 @@ export class NALUStream {
     } = {},
   ) {
     this.strict = false;
-    this.type = undefined;
-    //   this.buf = undefined;
+    this.type = options.type;
     this.boxSize = undefined;
     this.cursor = 0;
     this.nextPacket = undefined;
 
-    if (options) {
-      if (typeof options.strict === "boolean") {
-        this.strict = Boolean(options.strict);
-      }
-      if (options.boxSizeMinusOne) {
-        this.boxSize = options.boxSizeMinusOne + 1;
-      }
-      if (options.boxSize) {
-        this.boxSize = options.boxSize;
-      }
-      this.type = options.type;
-      if (this.type && !VALID_STREAM_TYPES.has(this.type)) {
-        throw new Error("NALUStream error: type must be packet or annexB");
-      }
+    if (typeof options.strict === "boolean") {
+      this.strict = Boolean(options.strict);
+    }
+    if (options.boxSizeMinusOne) {
+      this.boxSize = options.boxSizeMinusOne + 1;
+    }
+    if (options.boxSize) {
+      this.boxSize = options.boxSize;
+    }
+
+    if (this.type && !VALID_STREAM_TYPES.has(this.type)) {
+      throw new Error("NALUStream error: type must be packet or annexB");
     }
 
     if (this.strict && this.boxSize && (this.boxSize < 2 || this.boxSize > 6)) {

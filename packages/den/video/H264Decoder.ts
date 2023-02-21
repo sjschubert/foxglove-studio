@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { Mutex } from "async-mutex";
 import EventEmitter from "eventemitter3";
 
 import { Bitstream, NALUStream, NaluStreamInfo, NaluType, SPS } from "./h264Utils";
@@ -14,13 +15,13 @@ export type H264DecoderEventTypes = {
 };
 
 export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
+  #decoderInit: VideoDecoderInit;
   #decoder: VideoDecoder;
   #naluStreamInfo: NaluStreamInfo | undefined;
   #videoDecoderConfig: VideoDecoderConfig | undefined;
   #hasKeyframe = false;
-  #decoding: Promise<void> | undefined;
+  #mutex = new Mutex();
   #pendingFrame: VideoFrame | undefined;
-  #timestamp = 0;
 
   public static isSupported(): boolean {
     return self.isSecureContext && "VideoDecoder" in globalThis;
@@ -28,10 +29,17 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
 
   public constructor() {
     super();
-    this.#decoder = new VideoDecoder({
+    this.#decoderInit = {
+      output: (videoFrame) => {
+        if (this.#pendingFrame) {
+          this.#pendingFrame.close();
+        }
+        this.#pendingFrame = videoFrame;
+        this.emit("frame", videoFrame);
+      },
       error: (error) => this.emit("error", error),
-      output: (frame) => this.emit("frame", frame),
-    });
+    };
+    this.#decoder = new VideoDecoder(this.#decoderInit);
   }
 
   /**
@@ -45,16 +53,11 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
    * @returns A VideoFrame or undefined if no frame was decoded
    */
   public async decode(data: Uint8Array, timestampMicros: number): Promise<VideoFrame | undefined> {
-    if (this.#decoding) {
-      await this.#decoding;
-    }
+    await this.#mutex.acquire();
 
     if (this.#decoder.state === "closed") {
       this.emit("warn", "VideoDecoder is closed, creating a new one");
-      this.#decoder = new VideoDecoder({
-        error: (error) => this.emit("error", error),
-        output: (frame) => this.emit("frame", frame),
-      });
+      this.#decoder = new VideoDecoder(this.#decoderInit);
     }
 
     // Convert the data to Annex B format if necessary
@@ -64,6 +67,7 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
         "error",
         new Error(`Unable to convert ${data.byteLength} byte bitstream to Annex B format`),
       );
+      this.#mutex.release();
       return undefined;
     }
 
@@ -71,14 +75,23 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
     if (this.#decoder.state === "unconfigured") {
       const decoderConfig = this._getDecoderConfig(annexBFrame);
       if (decoderConfig != undefined) {
-        this.emit("debug", `Configuring VideoDecoder with ${JSON.stringify(decoderConfig)}`);
-        this.#decoder.configure(decoderConfig);
+        const support = await VideoDecoder.isConfigSupported(decoderConfig);
+        if (support.supported) {
+          this.emit("debug", `Configuring VideoDecoder with ${JSON.stringify(decoderConfig)}`);
+          this.#decoder.configure(decoderConfig);
+        } else {
+          const err = new Error(
+            `VideoDecoder does not support configuration ${JSON.stringify(decoderConfig)}`,
+          );
+          this.emit("error", err);
+          this.#mutex.release();
+          return undefined;
+        }
+      } else {
+        this.emit("debug", "Waiting for SPS...");
+        this.#mutex.release();
+        return undefined;
       }
-    }
-
-    if (this.#decoder.state !== "configured") {
-      this.emit("warn", `VideoDecoder is in state ${this.#decoder.state}, skipping frame`);
-      return undefined;
     }
 
     const type = isKeyFrame(annexBFrame) ? "key" : "delta";
@@ -86,12 +99,13 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
       if (type === "key") {
         this.#hasKeyframe = true;
       } else {
-        this.emit("debug", `Skipping non-keyframe before keyframe`);
+        this.emit("debug", `Waiting for keyframe...`);
+        this.#mutex.release();
         return undefined;
       }
     }
 
-    this.#decoding = new Promise((resolve) => {
+    const decoding = new Promise<void>((resolve) => {
       const timeoutId = setTimeout(() => {
         this.emit(
           "warn",
@@ -99,16 +113,12 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
         );
         resolve(undefined);
       }, 30);
-      this.once("frame", (videoFrame) => {
-        this.emit(
-          "debug",
-          `Decoded ${data.byteLength} byte ${type} chunk at time ${timestampMicros} to ${videoFrame.displayWidth}x${videoFrame.displayHeight} ${videoFrame.format}`,
-        );
+      this.once("frame", (_videoFrame) => {
+        // this.emit(
+        //   "debug",
+        //   `Decoded ${data.byteLength} byte ${type} chunk at time ${timestampMicros} to ${videoFrame.displayWidth}x${videoFrame.displayHeight} ${videoFrame.format}`,
+        // );
         clearTimeout(timeoutId);
-        if (this.#pendingFrame) {
-          this.#pendingFrame.close();
-        }
-        this.#pendingFrame = videoFrame;
         resolve();
       });
 
@@ -117,7 +127,7 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
           new EncodedVideoChunk({
             type,
             data: annexBFrame,
-            timestamp: this.#timestamp++, //timestampMicros,
+            timestamp: timestampMicros,
           }),
         );
       } catch (unk) {
@@ -128,11 +138,12 @@ export class H264Decoder extends EventEmitter<H264DecoderEventTypes> {
             `Failed to decode ${data.byteLength} byte chunk at time ${timestampMicros}: ${err.message}`,
           ),
         );
+        resolve();
       }
     });
 
-    await this.#decoding;
-    this.#decoding = undefined;
+    await decoding;
+    this.#mutex.release();
 
     const maybeVideoFrame = this.#pendingFrame;
     this.#pendingFrame = undefined;
