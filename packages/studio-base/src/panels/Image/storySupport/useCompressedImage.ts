@@ -1,10 +1,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
+import * as base64 from "@protobufjs/base64";
 import { useMemo } from "react";
-import Zfp from "wasm-zfp";
 
 import { NormalizedImageMessage } from "../types";
+
+const ZFP_BASE64_DATA =
+  "emZwBfQCAPABAACIHwAA0BkAmIF9AACwPIMIO7APAACGZxBxBvYBALDIMwi4A/sAAFjgXUCYgX0AAKzyLgDswD4AAFZ4FwBnYB8AAIO8i4g7sA8AgAHeRYAZ2AcAwCjvAMIO7AMAYIR3AHEG9gEALCLvAOAO7AMAgOUZRNiBfQAAMDyDiDOwDwCARZ5BwB3YBwDAAu8CwgzsAwBglXcBYAf2AQCwwrsAOAP7AAAY5F1E3IF9AAAM8C4CzMA+AABGeQcQdmAfAAAjvAOIM7APAGAReQcAd2AfAMAi8A4izMA+AAAYnkHEGdgHAMAizyDgDuwDAGCBdwFhBvYBALDKuwCwA/sAAFjhXQCcgX0AAAzyLiLuwD4AAAZ4FwFmYB8AAKO8Awg7sA8AgBHeAcQZ2AcAsIi8A4A7sA8AYBF4BxFmYB8AwKLyDgLswD4AABZ5BgF3YB8AAAu8CwgzsA8AgFXeBYAd2AcAwArvAuAM7AMAYJB3EXEH9gEAMMC7CDAD+wAAGOUdQNiBfQAAjPAOIM7APgCAReQdANyBfQAAi8A7iDAD+wAAFpV3EGAH9gEALArvIOAM7AMAYIF3AWEG9gEAsMq7ALAD+wAAWOFdAJyBfQAADPIuIu7APgAABngXAWZgHwAAo7wDCDuwDwCAEd4BxBnYBwCwiLwDgDuwDwBgEXgHEWZgHwDAovIOAuzAPgCAReEdBJyBfQAAi+KzgLgD+wAAWOVdANiBfQAArPAuAM7APgAABnkXEXdgHwAAA7yLADOwDwCAUd4BhB3YBwDACO8A4gzsAwBYRN4BwB3YBwCwCLyDCDOwDwBgUXkHAXZgHwDAovAOAs7APgCARfFZQNyBfQAAC+izADAD+wAAWOFdAJyBfQAADPIuIu7APgAABngXAWZgHwAAo7wDCDuwDwCAEd4BxBnYBwCwiLwDgDuwDwBgEXgHEWZgHwDAovIOAuzAPgCAReEdBJyBfQAAi+KzgLgD+wAAFtBnAWAG9gEALIDPIsIO7AMAYJB3EXEH9gEAMMC7CDAD+wAAGOUdQNiBfQAAjPAOIM7APgCAReQdANyBfQAAi8A7iDAD+wAAFpV3EGAH9gEALArvIOAM7AMAWBSfBcQd2AcAsIA+CwAzsA8AYAF8FhF2YB8AwIL6LCLOwAA=";
 
 function useCompressedImage(): NormalizedImageMessage | undefined {
   const imageFormat = "image/png";
@@ -48,35 +51,9 @@ function useCompressedImage(): NormalizedImageMessage | undefined {
 }
 
 function useZfpCompressedImage(): NormalizedImageMessage | undefined {
-  const [imageData, setImageData] = React.useState<Uint8Array | undefined>();
-  React.useEffect(() => {
-    const width = 400;
-    const height = 300;
-    const int32Data = new Int32Array(width * height);
-    // Create a grayscale gradient from top-left to bottom-right
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        int32Data[y * width + x] = ((x + y) * 10000) / (width + height);
-      }
-    }
-
-    void Zfp.isLoaded.then(() => {
-      const zfpBuffer = Zfp.createBuffer();
-      const compressed = Zfp.compress(zfpBuffer, {
-        data: int32Data,
-        shape: [width, height, 0, 0],
-        dimensions: 2,
-      });
-      Zfp.freeBuffer(zfpBuffer);
-
-      setImageData(compressed);
-    });
-  }, []);
-
   return useMemo(() => {
-    if (!imageData) {
-      return;
-    }
+    const imageData = new Uint8Array(base64.length(ZFP_BASE64_DATA));
+    base64.decode(ZFP_BASE64_DATA, imageData, 0);
 
     return {
       type: "compressed",
@@ -84,7 +61,7 @@ function useZfpCompressedImage(): NormalizedImageMessage | undefined {
       format: "zfp",
       data: imageData,
     };
-  }, [imageData]);
+  }, []);
 }
 
 export { useCompressedImage, useZfpCompressedImage };

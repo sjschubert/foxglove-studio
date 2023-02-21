@@ -5,8 +5,6 @@
 import { Story } from "@storybook/react";
 import { useEffect, useMemo, useRef } from "react";
 
-import { useReadySignal } from "@foxglove/studio-base/stories/ReadySignalContext";
-
 import { normalizeAnnotations } from "./normalizeAnnotations";
 import { renderImage } from "./renderImage";
 import {
@@ -137,7 +135,6 @@ export const MarkersWithRotations: Story = (_args) => {
 export const ZfpImage: Story = (_args) => {
   const imageMessage = useZfpCompressedImage();
   const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
-  const readySignal = useReadySignal();
 
   const width = 400;
   const height = 300;
@@ -167,24 +164,14 @@ export const ZfpImage: Story = (_args) => {
         cameraInfo,
         transformMarkers: true,
       },
-    }).then(() => {
-      if (imageMessage) {
-        readySignal();
-      }
     });
-  }, [imageMessage, readySignal]);
+  }, [imageMessage]);
 
   return (
     <div style={{ backgroundColor: "white", padding: "1rem" }}>
       <canvas ref={canvasRef} style={{ width, height }} />
     </div>
   );
-};
-ZfpImage.play = async (ctx) => {
-  await ctx.parameters.storyReady;
-};
-ZfpImage.parameters = {
-  useReadySignal: true,
 };
 
 export function FoxgloveAnnotations(): JSX.Element {
