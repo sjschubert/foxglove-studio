@@ -180,6 +180,9 @@ export const ZfpImage: Story = (_args) => {
     </div>
   );
 };
+ZfpImage.play = async (ctx) => {
+  await ctx.parameters.storyReady;
+};
 ZfpImage.parameters = {
   useReadySignal: true,
 };
