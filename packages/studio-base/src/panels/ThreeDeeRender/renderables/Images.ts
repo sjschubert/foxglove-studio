@@ -71,6 +71,11 @@ const CREATE_BITMAP_ERR = "CreateBitmap";
 const DEFAULT_IMAGE_WIDTH = 512;
 const DEFAULT_DISTANCE = 1;
 const DEFAULT_PLANAR_PROJECTION_FACTOR = 0;
+const DEFAULT_BITMAP_OPTIONS: ImageBitmapOptions = { resizeWidth: DEFAULT_IMAGE_WIDTH };
+
+const EXAMPLE_CAMERA_INFO_ID = "__EXAMPLE_CAMERA_INFO__";
+const EXAMPLE_FOCAL_LENGTH_MM = 1.88; // From the Intel RealSense D435 datasheet
+const EXAMPLE_SENSOR_WIDTH_MM = 3.855;
 
 const DEFAULT_SETTINGS: LayerSettingsImage = {
   visible: false,
@@ -167,6 +172,11 @@ export class Images extends SceneExtension<ImageRenderable> {
         }
       }
       const cameraInfoOptions = [...bestCameraInfoOptions, ...otherCameraInfoOptions];
+      if (cameraInfoOptions.length === 0) {
+        // Add a hardcoded option to allow *something* to be projected (opt-in), even if
+        // no CameraInfo is available
+        cameraInfoOptions.push({ label: "Example CameraInfo", value: EXAMPLE_CAMERA_INFO_ID });
+      }
 
       // prettier-ignore
       const fields: SettingsTreeFields = {
@@ -300,6 +310,18 @@ export class Images extends SceneExtension<ImageRenderable> {
       }
     }
 
+    if (settings.cameraInfoTopic === EXAMPLE_CAMERA_INFO_ID && !renderable.userData.cameraModel) {
+      // If the user has selected the example camera info, synthesize a CameraInfo message
+      // with available info. If width/height are not available, they will be updated later when
+      // an ImageBitmap is created
+      const width = "width" in image ? image.width : 1280;
+      const height = "height" in image ? image.height : 720;
+      renderable.userData.cameraInfo ??= createExampleCameraInfo(frameId, width, height);
+      renderable.userData.cameraModel = new PinholeCameraModel(renderable.userData.cameraInfo);
+
+      this.renderer.settings.errors.removeFromTopic(imageTopic, NO_CAMERA_INFO_ERR);
+    }
+
     const cameraModel = renderable.userData.cameraModel;
     if (cameraModel) {
       this._updateImageRenderable(renderable, image, cameraModel, receiveTime, settings);
@@ -409,7 +431,7 @@ export class Images extends SceneExtension<ImageRenderable> {
       if (BROWSER_IMAGE_FORMATS.has(image.format)) {
         const bitmapData = new Blob([image.data], { type: `image/${image.format}` });
         self
-          .createImageBitmap(bitmapData, { resizeWidth: DEFAULT_IMAGE_WIDTH })
+          .createImageBitmap(bitmapData, DEFAULT_BITMAP_OPTIONS)
           .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
           .catch((err) => this._handleTopicError(topic, err as Error));
       } else if (image.format === "zfp") {
@@ -422,7 +444,7 @@ export class Images extends SceneExtension<ImageRenderable> {
             const width = zfpResult.shape[0];
             const height = zfpResult.shape[1];
             const imageData = new ImageData(renderable.imageDataCache.data, width, height);
-            return self.createImageBitmap(imageData, { resizeWidth: DEFAULT_IMAGE_WIDTH });
+            return self.createImageBitmap(imageData, DEFAULT_BITMAP_OPTIONS);
           })
           .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
           .catch((err) => this._handleTopicError(topic, err as Error));
@@ -463,6 +485,31 @@ export class Images extends SceneExtension<ImageRenderable> {
   private _updateImageBitmap = (renderable: ImageRenderable, bitmap: ImageBitmap): void => {
     const { texture, topic } = renderable.userData;
     if (texture == undefined) {
+      if (renderable.userData.settings.cameraInfoTopic === EXAMPLE_CAMERA_INFO_ID) {
+        // Synthesize a new CameraInfo and update the camera model if image dimensions changed
+        const prevWidth = renderable.userData.cameraInfo?.width ?? 0;
+        const prevHeight = renderable.userData.cameraInfo?.height ?? 0;
+        const { width, height } = bitmap;
+        if (width !== prevWidth || height !== prevHeight) {
+          if (renderable.userData.geometry) {
+            renderable.userData.geometry.dispose();
+            renderable.userData.geometry = undefined;
+          }
+
+          const cameraInfo = createExampleCameraInfo(renderable.userData.frameId, width, height);
+          const cameraModel = new PinholeCameraModel(cameraInfo);
+          const geometry = createGeometry(cameraModel, renderable.userData.settings);
+
+          renderable.userData.cameraInfo = cameraInfo;
+          renderable.userData.cameraModel = cameraModel;
+          renderable.userData.geometry = geometry;
+          if (renderable.userData.mesh) {
+            renderable.remove(renderable.userData.mesh);
+            renderable.userData.mesh = undefined;
+          }
+        }
+      }
+
       renderable.userData.texture = createCanvasTexture(bitmap);
       rebuildMaterial(renderable);
       tryCreateMesh(renderable, this.renderer);
@@ -495,9 +542,13 @@ export class Images extends SceneExtension<ImageRenderable> {
       return renderable;
     }
 
+    const messageTime = image
+      ? toNanoSec("header" in image ? image.header.stamp : image.timestamp)
+      : 0n;
     renderable = new ImageRenderable(imageTopic, this.renderer, {
       receiveTime,
-      messageTime: image ? toNanoSec("header" in image ? image.header.stamp : image.timestamp) : 0n,
+      messageTime,
+      firstMessageTime: messageTime,
       frameId: this.renderer.normalizeFrameId(frameId),
       pose: makePose(),
       settingsPath: ["topics", imageTopic],
@@ -797,5 +848,36 @@ function normalizeCompressedImage(message: PartialMessage<CompressedImage>): Com
     frame_id: message.frame_id ?? "",
     format: message.format ?? "",
     data: normalizeByteArray(message.data),
+  };
+}
+
+function createExampleCameraInfo(frame_id: string, width: number, height: number): CameraInfo {
+  const focal_length_mm = EXAMPLE_FOCAL_LENGTH_MM;
+  const sensor_width_mm = EXAMPLE_SENSOR_WIDTH_MM;
+  const sensor_height_mm = (sensor_width_mm * height) / width;
+
+  const fx = width * (focal_length_mm / sensor_width_mm);
+  const fy = height * (focal_length_mm / sensor_height_mm);
+  const cx = width / 2;
+  const cy = height / 2;
+
+  return {
+    header: { stamp: { sec: 0, nsec: 0 }, frame_id },
+    distortion_model: "plumb_bob",
+    width,
+    height,
+    D: [0, 0, 0, 0, 0],
+    K: [fx, 0, cx, 0, fy, cy, 0, 0, 1],
+    R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    P: [fx, 0, cx, 0, 0, fy, cy, 0, 0, 0, 1, 0],
+    binning_x: 0,
+    binning_y: 0,
+    roi: {
+      x_offset: 0,
+      y_offset: 0,
+      height: 0,
+      width: 0,
+      do_rectify: false,
+    },
   };
 }
