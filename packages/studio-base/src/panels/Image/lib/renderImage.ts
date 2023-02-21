@@ -135,10 +135,14 @@ function decodeMessageToBitmap(
 
   switch (imageMessage.type) {
     case "compressed": {
-      if (BROWSER_IMAGE_FORMATS.has(imageMessage.format)) {
-        const image = new Blob([rawData], { type: `image/${imageMessage.format}` });
+      // Strip image/ prefix if present
+      const format = imageMessage.format.startsWith("image/")
+        ? imageMessage.format.slice(6)
+        : imageMessage.format;
+      if (BROWSER_IMAGE_FORMATS.has(format)) {
+        const image = new Blob([rawData], { type: `image/${format}` });
         return self.createImageBitmap(image);
-      } else if (imageMessage.format === "zfp") {
+      } else if (format === "zfp") {
         // Potentially performance-sensitive; await can be expensive
         // eslint-disable-next-line @typescript-eslint/promise-function-async
         return decodeZfp(imageMessage.data, imageDataCache, options).then((zfpResult) => {

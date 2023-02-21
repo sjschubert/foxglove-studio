@@ -406,13 +406,15 @@ export class Images extends SceneExtension<ImageRenderable> {
 
     // Create or update the bitmap texture
     if ("format" in image) {
-      if (BROWSER_IMAGE_FORMATS.has(image.format)) {
-        const bitmapData = new Blob([image.data], { type: `image/${image.format}` });
+      // Strip image/ prefix if present
+      const format = image.format.startsWith("image/") ? image.format.slice(6) : image.format;
+      if (BROWSER_IMAGE_FORMATS.has(format)) {
+        const bitmapData = new Blob([image.data], { type: `image/${format}` });
         self
           .createImageBitmap(bitmapData, { resizeWidth: DEFAULT_IMAGE_WIDTH })
           .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
           .catch((err) => this._handleTopicError(topic, err as Error));
-      } else if (image.format === "zfp") {
+      } else if (format === "zfp") {
         const cache = renderable.imageDataCache;
 
         decodeZfp(image.data, cache)
