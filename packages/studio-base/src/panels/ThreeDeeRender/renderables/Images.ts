@@ -23,6 +23,7 @@ import {
   decodeZfp,
   BROWSER_IMAGE_FORMATS,
 } from "@foxglove/den/image";
+import { H264Decoder } from "@foxglove/den/video";
 import Logger from "@foxglove/log";
 import { toNanoSec } from "@foxglove/rostime";
 import { CameraCalibration, CompressedImage, RawImage } from "@foxglove/schemas";
@@ -89,6 +90,7 @@ const DEFAULT_SETTINGS: LayerSettingsImage = {
 export type ImageUserData = BaseUserData & {
   topic: string;
   settings: LayerSettingsImage;
+  firstMessageTime: bigint | undefined;
   cameraInfo: CameraInfo | undefined;
   cameraModel: PinholeCameraModel | undefined;
   image: AnyImage | undefined;
@@ -102,6 +104,8 @@ export class ImageRenderable extends Renderable<ImageUserData> {
   // A cache for decompressed image data, where the size is not known ahead of
   // time and may change between messages.
   public imageDataCache = { data: new Uint8ClampedArray(0) };
+  // A lazily instantiated decoder for h264 compressed video
+  public h264Decoder: H264Decoder | undefined;
 
   public override dispose(): void {
     this.userData.texture?.dispose();
@@ -433,6 +437,21 @@ export class Images extends SceneExtension<ImageRenderable> {
         self
           .createImageBitmap(bitmapData, DEFAULT_BITMAP_OPTIONS)
           .then((bitmap) => this._updateImageBitmap(renderable, bitmap))
+          .catch((err) => this._handleTopicError(topic, err as Error));
+      } else if (image.format.startsWith("h264")) {
+        renderable.h264Decoder ??= new H264Decoder();
+        const h264Decoder = renderable.h264Decoder;
+        const timestampNs = renderable.userData.messageTime - renderable.userData.firstMessageTime!;
+        const timestampMicros = Number(timestampNs / 1000n);
+        h264Decoder
+          .decode(image.data, timestampMicros)
+          .then(async (videoFrame) => {
+            if (videoFrame) {
+              const imageBitmap = await self.createImageBitmap(videoFrame, DEFAULT_BITMAP_OPTIONS);
+              videoFrame.close();
+              this._updateImageBitmap(renderable, imageBitmap);
+            }
+          })
           .catch((err) => this._handleTopicError(topic, err as Error));
       } else if (image.format === "zfp") {
         const cache = renderable.imageDataCache;
