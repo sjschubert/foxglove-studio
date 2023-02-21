@@ -60,15 +60,17 @@ function useZfpCompressedImage(): NormalizedImageMessage | undefined {
       }
     }
 
-    const zfpBuffer = Zfp.createBuffer();
-    const compressed = Zfp.compress(zfpBuffer, {
-      data: int32Data,
-      shape: [width, height, 0, 0],
-      dimensions: 2,
-    });
-    Zfp.freeBuffer(zfpBuffer);
+    void Zfp.isLoaded.then(() => {
+      const zfpBuffer = Zfp.createBuffer();
+      const compressed = Zfp.compress(zfpBuffer, {
+        data: int32Data,
+        shape: [width, height, 0, 0],
+        dimensions: 2,
+      });
+      Zfp.freeBuffer(zfpBuffer);
 
-    setImageData(compressed);
+      setImageData(compressed);
+    });
   }, []);
 
   return useMemo(() => {
