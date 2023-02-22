@@ -19,7 +19,7 @@ import Zfp, { ZfpType, ZfpBuffer, ZfpResult } from "wasm-zfp";
 // https://github.com/ros-perception/image_pipeline/blob/42266892502427eb566a4dffa61b009346491ce7/image_view/src/nodes/image_view.cpp#L80-L88
 // https://github.com/ros-visualization/rqt_image_view/blob/fe076acd265a05c11c04f9d04392fda951878f54/src/rqt_image_view/image_view.cpp#L582
 // https://github.com/ros-visualization/rviz/blob/68b464fb6571b8760f91e8eca6fb933ba31190bf/src/rviz/image/ros_image_texture.cpp#L114
-const DEFAULT_MAX = 10000;
+const DEFAULT_INT_MAX = 10000;
 
 // The set of image formats that can natively be rendered in the browser
 export const BROWSER_IMAGE_FORMATS = new Set([
@@ -239,7 +239,7 @@ export function decodeMono16(
 
   // Use user-provided max/min values, or default to [0, DEFAULT_MAX]
   const minValue = options?.minValue ?? 0;
-  let maxValue = options?.maxValue ?? DEFAULT_MAX;
+  let maxValue = options?.maxValue ?? DEFAULT_INT_MAX;
   if (maxValue === minValue) {
     maxValue = minValue + 1;
   }
@@ -382,7 +382,7 @@ function expandZfpResult(
   size: number,
   options: { minValue?: number; maxValue?: number },
 ) {
-  const { minValue = 0, maxValue = DEFAULT_MAX } = options;
+  const { minValue = 0, maxValue = DEFAULT_INT_MAX } = options;
   const invDiff = 1 / (maxValue - minValue);
   const hasRange = options.maxValue != undefined;
 

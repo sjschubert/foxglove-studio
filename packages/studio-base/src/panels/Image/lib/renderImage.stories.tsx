@@ -19,7 +19,7 @@ export default {
   title: "panels/Image/renderImage",
   parameters: {
     chromatic: {
-      delay: 100,
+      delay: 3000,
     },
     colorScheme: "dark",
   },
@@ -136,8 +136,8 @@ export const ZfpImage: Story = (_args) => {
   const imageMessage = useZfpCompressedImage();
   const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
 
-  const width = 400;
-  const height = 300;
+  const width = 480;
+  const height = 320;
 
   useEffect(() => {
     if (!canvasRef.current) {
