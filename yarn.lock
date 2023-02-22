@@ -2473,7 +2473,7 @@ __metadata:
     "@types/shallowequal": 1.1.1
     "@types/string-hash": 1.1.1
     "@types/text-metrics": "workspace:*"
-    "@types/three": ^0.148.1
+    "@types/three": ^0.149.0
     "@types/tinycolor2": 1.4.3
     "@types/url-search-params": 1.1.0
     "@types/uuid": 9.0.0
@@ -2504,7 +2504,7 @@ __metadata:
     fzf: 0.5.1
     gl-matrix: 3.4.3
     hammerjs: 2.0.8
-    i18next: 22.4.9
+    i18next: 22.4.10
     i18next-browser-languagedetector: 7.0.1
     idb: 7.1.1
     idb-keyval: 6.2.0
@@ -2540,7 +2540,7 @@ __metadata:
     react-markdown: 8.0.5
     react-monaco-editor: 0.51.0
     react-mosaic-component: 5.3.0
-    react-refresh-typescript: 2.0.7
+    react-refresh-typescript: 2.0.8
     react-resize-detector: 8.0.3
     react-svg-loader: 3.0.3
     react-table: 7.8.0
@@ -2558,7 +2558,7 @@ __metadata:
     string-replace-loader: 3.1.0
     style-loader: 3.3.1
     text-metrics: 3.0.0
-    three: "patch:three@0.148.0#../../patches/three.patch"
+    three: "patch:three@0.149.0#../../patches/three.patch"
     tinycolor2: 1.6.0
     ts-essentials: 9.3.0
     ts-key-enum: 2.0.12
@@ -2575,7 +2575,7 @@ __metadata:
     uuid: 9.0.0
     webpack: 5.75.0
     xacro-parser: 0.3.9
-    zustand: 4.3.2
+    zustand: 4.3.3
   languageName: unknown
   linkType: soft
 
@@ -6801,12 +6801,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@types/three@npm:^0.148.1":
-  version: 0.148.1
-  resolution: "@types/three@npm:0.148.1"
+"@types/three@npm:^0.149.0":
+  version: 0.149.0
+  resolution: "@types/three@npm:0.149.0"
   dependencies:
     "@types/webxr": "*"
-  checksum: 166eb03b80ece4d400641c17cc74a9ad28331dc1f255964dee3d9bead9a4d46e2c287beb1f65a44254b224163a8102f4fe1d50685c896c7fb84fd01c11c43e2d
+  checksum: 5def82bd5d4fb0eb6046e747eecced06d68fbf1747ab8f3e7657872e42e58ce7a92218d7c5e4ca26204257927638ad14da5d1cce7310aca15eb8a9bd484ea191
   languageName: node
   linkType: hard
 
@@ -11202,7 +11202,7 @@ __metadata:
     quicklookjs: 0.0.3
     react: 17.0.2
     react-dom: 17.0.2
-    react-refresh-typescript: 2.0.7
+    react-refresh-typescript: 2.0.8
     react-use: 17.4.0
     tinycolor2: 1.6.0
     tss-react: 4.6.0
@@ -14847,12 +14847,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:22.4.9":
-  version: 22.4.9
-  resolution: "i18next@npm:22.4.9"
+"i18next@npm:22.4.10":
+  version: 22.4.10
+  resolution: "i18next@npm:22.4.10"
   dependencies:
     "@babel/runtime": ^7.20.6
-  checksum: 8cce4aaced4857e006fab2c9d4adb0eb1375829e459076be79d4d3532b1be6342b7003a720e187098f17bb276bea46df8b3fc2cf21f0f3a230bd519243048d1a
+  checksum: 731423e3fafe4ecaf0fc3c5867b69ae5c35c9021f7b5aad8392a9bf5cf56fbf1503376ba5aa935f2b21e12a97862fa31be0e4b35e98eefb747e2008b5808e35c
   languageName: node
   linkType: hard
 
@@ -20936,13 +20936,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-refresh-typescript@npm:2.0.7":
-  version: 2.0.7
-  resolution: "react-refresh-typescript@npm:2.0.7"
+"react-refresh-typescript@npm:2.0.8":
+  version: 2.0.8
+  resolution: "react-refresh-typescript@npm:2.0.8"
   peerDependencies:
     react-refresh: 0.10.x || 0.11.x || 0.12.x || 0.13.x || 0.14.x
-    typescript: ^4
-  checksum: a95a44f7e72b7b1de001d400c004b3d1adf22ca72cd335efeda13a0a7e154e476cd113105fbbd7413122147ce4f7fff0e4308b0c19ea13947a3665a4314fd629
+    typescript: ^4.8 || ^5.0
+  checksum: 6c08146e52b03616aa5597bbd03fdaaeddfee18e9edcd635e32704cf816300b4737ab77e5760a2fdc69a816e4827f1d1535fc9d852dba5b3965db6ba1aaa7646
   languageName: node
   linkType: hard
 
@@ -23645,17 +23645,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"three@npm:0.148.0":
-  version: 0.148.0
-  resolution: "three@npm:0.148.0"
-  checksum: 3f6359585c006c6f78b2fc1adeb90559d9b7cd6daf5cf916e81494ff228f4a9beffe37136bd8d5b0afbf377ac070b70624245bec2e9ee557035e2c485ce05197
+"three@npm:0.149.0":
+  version: 0.149.0
+  resolution: "three@npm:0.149.0"
+  checksum: bb11e28054ce11ecfbe94150c2f253fe149cd7532b7b9253cf0806022d234ba3711944f42d65131d146193e7396b92c9965d88cd779b979f007795e13dfb44e9
   languageName: node
   linkType: hard
 
-"three@patch:three@0.148.0#../../patches/three.patch::locator=%40foxglove%2Fstudio-base%40workspace%3Apackages%2Fstudio-base":
-  version: 0.148.0
-  resolution: "three@patch:three@npm%3A0.148.0#../../patches/three.patch::version=0.148.0&hash=34f677&locator=%40foxglove%2Fstudio-base%40workspace%3Apackages%2Fstudio-base"
-  checksum: e28bed988c499e690a79f9a8245daa474390a2fc081ea0387f7059bfbdacb375c96b1e892ddfeb1832e4c73dc41771cb545e26176759696b29a75d3f60be08bf
+"three@patch:three@0.149.0#../../patches/three.patch::locator=%40foxglove%2Fstudio-base%40workspace%3Apackages%2Fstudio-base":
+  version: 0.149.0
+  resolution: "three@patch:three@npm%3A0.149.0#../../patches/three.patch::version=0.149.0&hash=752558&locator=%40foxglove%2Fstudio-base%40workspace%3Apackages%2Fstudio-base"
+  checksum: f8fb90a94def61dd5f7fc17a58ff133af92f43685761b9f40af8f524254e2475e59811fadcda0380436fba3889436fee8784ecda8a4ba687b6eb8f2b98c0683f
   languageName: node
   linkType: hard
 
@@ -25968,9 +25968,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zustand@npm:4.3.2":
-  version: 4.3.2
-  resolution: "zustand@npm:4.3.2"
+"zustand@npm:4.3.3":
+  version: 4.3.3
+  resolution: "zustand@npm:4.3.3"
   dependencies:
     use-sync-external-store: 1.2.0
   peerDependencies:
@@ -25981,7 +25981,7 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: fc443abf5bc9deac0d4e375847e7914e44c7ffc9f7f09b60e466cb9bbbcf5a46706bf2f9c8b9e6e6c9a1c5aea0bd6123cbf9fbcd39788ae27d8494d505969ae8
+  checksum: fe0277ab0ce14849dea254cbdcfe83d4614364d38e616875f75ef2419f29085f5b03605efabeb33189a4557e647efaa294e0984c4f642e0566f445a7b207cdd6
   languageName: node
   linkType: hard
 
