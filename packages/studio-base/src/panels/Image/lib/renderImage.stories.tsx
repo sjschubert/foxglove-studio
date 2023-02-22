@@ -7,13 +7,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { normalizeAnnotations } from "./normalizeAnnotations";
 import { renderImage } from "./renderImage";
-import {
-  useCompressedImage,
-  cameraInfo,
-  annotations,
-  foxgloveAnnotations,
-  useZfpCompressedImage,
-} from "../storySupport";
+import { useCompressedImage, cameraInfo, annotations, foxgloveAnnotations } from "../storySupport";
 
 export default {
   title: "panels/Image/renderImage",
@@ -128,48 +122,6 @@ export const MarkersWithRotations: Story = (_args) => {
           style={{ width, height }}
         />
       ))}
-    </div>
-  );
-};
-
-export const ZfpImage: Story = (_args) => {
-  const imageMessage = useZfpCompressedImage();
-  const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
-
-  const width = 480;
-  const height = 320;
-
-  useEffect(() => {
-    if (!canvasRef.current) {
-      return;
-    }
-
-    canvasRef.current.width = 2 * width;
-    canvasRef.current.height = 2 * height;
-
-    void renderImage({
-      canvas: canvasRef.current,
-      hitmapCanvas: undefined,
-      geometry: {
-        flipHorizontal: false,
-        flipVertical: false,
-        panZoom: { x: 0, y: 0, scale: 1 },
-        rotation: 0,
-        viewport: { width, height },
-        zoomMode: "fill",
-      },
-      imageMessage,
-      rawMarkerData: {
-        markers: annotations,
-        cameraInfo,
-        transformMarkers: true,
-      },
-    });
-  }, [imageMessage]);
-
-  return (
-    <div style={{ backgroundColor: "white", padding: "1rem" }}>
-      <canvas ref={canvasRef} style={{ width, height }} />
     </div>
   );
 };

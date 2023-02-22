@@ -20,7 +20,7 @@ import { CameraInfo } from "@foxglove/studio-base/types/Messages";
 
 import { ImageCanvas } from "./ImageCanvas";
 import ImageView from "../index";
-import { useCompressedImage, annotations } from "../storySupport";
+import { useCompressedImage, annotations, useZfpCompressedImage } from "../storySupport";
 import { Config } from "../types";
 
 const cameraInfo: CameraInfo = {
@@ -308,6 +308,35 @@ MarkersImageSize.play = async (ctx) => {
   await ctx.parameters.storyReady;
 };
 MarkersImageSize.parameters = {
+  useReadySignal: true,
+};
+
+export const ZfpMarkersTransformed: Story = (_args) => {
+  const image = useZfpCompressedImage();
+  const readySignal = useReadySignal();
+
+  return (
+    <div style={{ height: "400px" }}>
+      <ImageCanvas
+        topic={topics[1]}
+        image={image}
+        rawMarkerData={{
+          markers: annotations,
+          cameraInfo,
+          transformMarkers: true,
+        }}
+        config={config}
+        saveConfig={noop}
+        setActivePixelData={noop}
+        onStartRenderImage={() => readySignal}
+      />
+    </div>
+  );
+};
+ZfpMarkersTransformed.play = async (ctx) => {
+  await ctx.parameters.storyReady;
+};
+ZfpMarkersTransformed.parameters = {
   useReadySignal: true,
 };
 
