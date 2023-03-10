@@ -223,7 +223,7 @@ export class Images extends SceneExtension<ImageRenderable> {
           order: imageTopic.toLocaleLowerCase(),
           handler,
           actions:
-            (config.visible ?? DEFAULT_SETTINGS.visible) && process.env.NODE_ENV !== "production"
+            config.visible ?? DEFAULT_SETTINGS.visible
               ? [
                   {
                     id: "use-as-viewport",
