@@ -37,6 +37,8 @@ import Timeline from "@mui/icons-material/Timeline";
 import Topic from "@mui/icons-material/Topic";
 import Collapse from "@mui/icons-material/UnfoldLess";
 import Expand from "@mui/icons-material/UnfoldMore";
+import Videocam from "@mui/icons-material/Videocam";
+import VideocamOutlined from "@mui/icons-material/VideocamOutlined";
 import Cells from "@mui/icons-material/ViewComfy";
 import Cube from "@mui/icons-material/ViewInAr";
 import ImageProjection from "@mui/icons-material/Vrpano";
@@ -80,6 +82,8 @@ const icons: Record<SettingsIcon, typeof Add> = {
   Star,
   Timeline,
   Topic,
+  Videocam,
+  VideocamOutlined,
   Walk,
   World,
 };

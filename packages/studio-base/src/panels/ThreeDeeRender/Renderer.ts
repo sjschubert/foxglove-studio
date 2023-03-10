@@ -298,6 +298,7 @@ export class Renderer extends EventEmitter<RendererEvents> {
 
   private perspectiveCamera: THREE.PerspectiveCamera;
   private orthographicCamera: THREE.OrthographicCamera;
+  private EXPERIMENTAL_overrideCamera: THREE.PerspectiveCamera;
   // This group is used to transform the cameras based on the Frame follow mode
   // quaternion is affected in stationary and position-only follow modes
   // both position and quaternion of the group are affected in stationary mode
@@ -403,11 +404,13 @@ export class Renderer extends EventEmitter<RendererEvents> {
 
     this.perspectiveCamera = new THREE.PerspectiveCamera();
     this.orthographicCamera = new THREE.OrthographicCamera();
+    this.EXPERIMENTAL_overrideCamera = new THREE.PerspectiveCamera();
     this.cameraGroup = new THREE.Group();
 
     this.cameraGroup.add(this.perspectiveCamera);
     this.cameraGroup.add(this.orthographicCamera);
     this.scene.add(this.cameraGroup);
+    this.scene.add(this.EXPERIMENTAL_overrideCamera);
 
     this.controls = new OrbitControls(this.perspectiveCamera, this.canvas);
     this.controls.screenSpacePanning = false; // only allow panning in the XY plane
@@ -1030,7 +1033,7 @@ export class Renderer extends EventEmitter<RendererEvents> {
     this.gl.clear();
     this.emit("startFrame", currentTime, this);
 
-    const camera = this.activeCamera();
+    let camera = this.activeCamera();
     camera.layers.set(LAYER_DEFAULT);
     this.selectionBackdrop.visible = this.selectedRenderable != undefined;
 
@@ -1082,8 +1085,28 @@ export class Renderer extends EventEmitter<RendererEvents> {
       );
     }
 
+    let overrideProjection:
+      | ReturnType<SceneExtension["EXPERIMENTAL_overrideProjection"]>
+      | undefined;
     for (const sceneExtension of this.sceneExtensions.values()) {
       sceneExtension.startFrame(currentTime, renderFrameId, fixedFrameId);
+      overrideProjection ??= sceneExtension.EXPERIMENTAL_overrideProjection();
+    }
+
+    if (overrideProjection) {
+      const overrideFrame = this.transformTree.frame(overrideProjection.frameId);
+      if (renderFrame && overrideFrame && fixedFrame) {
+        const pose = makePose();
+        renderFrame.applyLocal(pose, pose, overrideFrame, currentTime);
+        camera = this.EXPERIMENTAL_overrideCamera;
+        camera.layers.set(LAYER_DEFAULT);
+        camera.projectionMatrix.copy(overrideProjection.matrix);
+        camera.projectionMatrixInverse.copy(overrideProjection.matrix).invert();
+        camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+        camera.quaternion
+          .set(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+          .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI));
+      }
     }
 
     this.gl.render(this.scene, camera);

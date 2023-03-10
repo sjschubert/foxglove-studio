@@ -458,6 +458,8 @@ export type SettingsIcon =
   | "SouthEast"
   | "Timeline"
   | "Topic"
+  | "Videocam"
+  | "VideocamOutlined"
   | "Walk"
   | "World";
 

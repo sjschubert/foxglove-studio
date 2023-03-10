@@ -202,4 +202,8 @@ export class SceneExtension<
       }
     }
   }
+
+  public EXPERIMENTAL_overrideProjection(): { matrix: THREE.Matrix4; frameId: string } | undefined {
+    return undefined;
+  }
 }

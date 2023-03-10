@@ -61,6 +61,7 @@ export type LayerSettingsImage = BaseSettings & {
   distance: number;
   planarProjectionFactor: number;
   color: string;
+  experimentalUseAsViewport: boolean;
 };
 
 const NO_CAMERA_INFO_ERR = "NoCameraInfo";
@@ -78,6 +79,7 @@ const DEFAULT_SETTINGS: LayerSettingsImage = {
   distance: DEFAULT_DISTANCE,
   planarProjectionFactor: DEFAULT_PLANAR_PROJECTION_FACTOR,
   color: "#ffffff",
+  experimentalUseAsViewport: false,
 };
 
 export type ImageUserData = BaseUserData & {
@@ -220,6 +222,19 @@ export class Images extends SceneExtension<ImageRenderable> {
           visible: config.visible ?? DEFAULT_SETTINGS.visible,
           order: imageTopic.toLocaleLowerCase(),
           handler,
+          actions:
+            (config.visible ?? DEFAULT_SETTINGS.visible) && process.env.NODE_ENV !== "production"
+              ? [
+                  {
+                    id: "use-as-viewport",
+                    type: "action",
+                    label: "Use as viewport",
+                    icon:
+                      config.experimentalUseAsViewport === true ? "Videocam" : "VideocamOutlined",
+                    display: "inline",
+                  },
+                ]
+              : [],
         },
       });
     }
@@ -228,7 +243,38 @@ export class Images extends SceneExtension<ImageRenderable> {
 
   public override handleSettingsAction = (action: SettingsTreeAction): void => {
     const path = action.payload.path;
-    if (action.action !== "update" || path.length !== 3) {
+    if (
+      action.action === "perform-node-action" &&
+      action.payload.id === "use-as-viewport" &&
+      path.length === 2
+    ) {
+      const imageTopic = path[1]!;
+      const prevSettings = this.renderer.config.topics[imageTopic] as
+        | Partial<LayerSettingsImage>
+        | undefined;
+      const prevUseAsViewport = prevSettings?.experimentalUseAsViewport ?? false;
+
+      this.renderer.updateConfig((draft) => {
+        if (!prevUseAsViewport) {
+          for (const topic in draft.topics) {
+            const topicSettings = draft.topics[topic];
+            if (
+              topicSettings &&
+              "experimentalUseAsViewport" in topicSettings &&
+              topicSettings.experimentalUseAsViewport === true
+            ) {
+              delete topicSettings.experimentalUseAsViewport;
+            }
+          }
+        }
+        draft.topics[imageTopic] ??= {};
+        (draft.topics[imageTopic] as LayerSettingsImage).experimentalUseAsViewport =
+          !prevUseAsViewport;
+      });
+      this.updateSettingsTree();
+    } else if (action.action === "update" && path.length === 3) {
+      this.saveSetting(path, action.payload.value);
+    } else {
       return;
     }
 
@@ -237,8 +283,6 @@ export class Images extends SceneExtension<ImageRenderable> {
       | Partial<LayerSettingsImage>
       | undefined;
     const prevCameraInfoTopic = prevSettings?.cameraInfoTopic;
-
-    this.saveSetting(path, action.payload.value);
 
     const settings = this.renderer.config.topics[imageTopic] as
       | Partial<LayerSettingsImage>
@@ -375,6 +419,45 @@ export class Images extends SceneExtension<ImageRenderable> {
       this.updateSettingsTree();
     }
   };
+
+  public override EXPERIMENTAL_overrideProjection():
+    | { matrix: THREE.Matrix4; frameId: string }
+    | undefined {
+    for (const renderable of this.renderables.values()) {
+      if (!renderable.userData.settings.experimentalUseAsViewport) {
+        continue;
+      }
+      const model = renderable.userData.cameraModel;
+      if (!model?.P) {
+        continue;
+      }
+
+      // Adapted from https://github.com/ros2/rviz/blob/ee44ccde8a7049073fd1901dd36c1fb69110f726/rviz_default_plugins/src/rviz_default_plugins/displays/camera/camera_display.cpp#L615
+
+      const fx = model.P[0];
+      const fy = model.P[5];
+      const cx = model.P[2];
+      const cy = model.P[6];
+      const { width, height } = model;
+
+      const zoomX = renderable.userData.settings.distance;
+      const zoomY = renderable.userData.settings.distance;
+      const near = 0.001;
+      const far = 1000;
+      // prettier-ignore
+      const matrix = new THREE.Matrix4()
+        .set(
+          2*fx/width * zoomX, 0, 2*(0.5-cx/width) * zoomX, 0,
+          0, 2*fy/height * zoomY, 2*(cy/height-0.5) * zoomY, 0,
+          0, 0, -(far+near)/(far-near), -2*far*near/(far-near),
+          0, 0, -1, 0,
+        );
+
+      return { matrix, frameId: renderable.userData.frameId };
+    }
+
+    return undefined;
+  }
 
   private _updateImageRenderable(
     renderable: ImageRenderable,
