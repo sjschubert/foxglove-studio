@@ -20,7 +20,6 @@ import { DeepPartial } from "ts-essentials";
 import { makeStyles } from "tss-react/mui";
 import { useDebouncedCallback } from "use-debounce";
 
-import { filterMap } from "@foxglove/den/collection";
 import Logger from "@foxglove/log";
 import { Time, compare, isGreaterThan, isLessThan, toNanoSec } from "@foxglove/rostime";
 import {
@@ -820,12 +819,6 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     }
   }, [renderer, currentTime, allFrames, didSeek]);
 
-  const preloadSubscriptions = useMemo(() => {
-    return new Set(
-      filterMap(topicsToSubscribe ?? [], (sub) => (sub.preload === true ? sub.topic : undefined)),
-    );
-  }, [topicsToSubscribe]);
-
   // Handle messages and render a frame if new messages are available
   useEffect(() => {
     if (!renderer || !currentFrameMessages) {
@@ -833,14 +826,11 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     }
 
     for (const message of currentFrameMessages) {
-      // skip preloaded messages since they're handled previously
-      if (!preloadSubscriptions.has(message.topic)) {
-        renderer.addMessageEvent(message);
-      }
+      renderer.addMessageEvent(message);
     }
 
     renderRef.current.needsRender = true;
-  }, [currentFrameMessages, renderer, preloadSubscriptions]);
+  }, [currentFrameMessages, renderer]);
 
   // Update the renderer when the camera moves
   useEffect(() => {
