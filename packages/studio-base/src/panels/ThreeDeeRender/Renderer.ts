@@ -546,10 +546,13 @@ export class Renderer extends EventEmitter<RendererEvents> {
    * Clears internal state such as the TransformTree and removes Renderables from SceneExtensions.
    * This is useful when seeking to a new playback position or when a new data source is loaded.
    */
-  public clear(): void {
+  public clear(lastCurrentTime?: bigint): void {
     // These must be cleared before calling `SceneExtension#removeAllRenderables()` to allow
     // extensions to add transforms and errors back afterward
-    this.transformTree.clearAfter(this.currentTime);
+    // don't want to clear transforms if we're seeking forward
+    if (lastCurrentTime == undefined || this.currentTime < lastCurrentTime) {
+      this.transformTree.clear();
+    }
     this.settings.errors.clear();
 
     for (const extension of this.sceneExtensions.values()) {

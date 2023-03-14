@@ -34,6 +34,7 @@ import {
   Topic,
   VariableValue,
 } from "@foxglove/studio";
+import { filterMap } from "@foxglove/studio-base/../../den/collection";
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
 import PublishGoalIcon from "@foxglove/studio-base/components/PublishGoalIcon";
 import PublishPointIcon from "@foxglove/studio-base/components/PublishPointIcon";
@@ -442,7 +443,9 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
   const [topics, setTopics] = useState<ReadonlyArray<Topic> | undefined>();
   const [parameters, setParameters] = useState<ReadonlyMap<string, ParameterValue> | undefined>();
   const [variables, setVariables] = useState<ReadonlyMap<string, VariableValue> | undefined>();
-  const [messages, setMessages] = useState<ReadonlyArray<MessageEvent<unknown>> | undefined>();
+  const [currentFrameMessages, setCurrentFrameMessages] = useState<
+    ReadonlyArray<MessageEvent<unknown>> | undefined
+  >();
   const [currentTime, setCurrentTime] = useState<Time | undefined>();
   const [didSeek, setDidSeek] = useState<boolean>(false);
   const [sharedPanelState, setSharedPanelState] = useState<undefined | Shared3DPanelState>();
@@ -622,7 +625,7 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
 
         // currentFrame has messages on subscribed topics since the last render call
         deepParseMessageEvents(renderState.currentFrame);
-        setMessages(renderState.currentFrame);
+        setCurrentFrameMessages(renderState.currentFrame);
 
         // allFrames has messages on preloaded topics across all frames (as they are loaded)
         deepParseMessageEvents(renderState.allFrames);
@@ -711,6 +714,7 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     }
   }, [variables, renderer]);
 
+  const lastCurrentTime = renderer?.currentTime;
   // Keep the renderer currentTime up to date
   useEffect(() => {
     if (renderer && currentTime != undefined) {
@@ -723,10 +727,10 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
   useEffect(() => {
     if (renderer && didSeek) {
       // want to clear after the current time only if preloading is not active or if the seek time is after the previous time
-      renderer.clear();
+      renderer.clear(lastCurrentTime);
       setDidSeek(false);
     }
-  }, [renderer, didSeek]);
+  }, [renderer, didSeek, lastCurrentTime]);
 
   // Keep the renderer colorScheme and backgroundColor up to date
   useEffect(() => {
@@ -800,9 +804,6 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
       }
       if (!hasAddedMessageEvents) {
         hasAddedMessageEvents = true;
-        // transform tree specific optimization - adding to tree before it's highest cache time is expensive
-        // so we clear it to avoid adding to the tree before the highest cache time
-        renderer.transformTree.clearAfter(toNanoSec(message.receiveTime));
       }
 
       renderer.addMessageEvent(message);
@@ -823,18 +824,27 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     }
   }, [renderer, currentTime, allFrames, didSeek]);
 
+  const preloadSubscriptions = useMemo(() => {
+    return new Set(
+      filterMap(topicsToSubscribe ?? [], (sub) => (sub.preload === true ? sub.topic : undefined)),
+    );
+  }, [topicsToSubscribe]);
+
   // Handle messages and render a frame if new messages are available
   useEffect(() => {
-    if (!renderer || !messages) {
+    if (!renderer || !currentFrameMessages) {
       return;
     }
 
-    for (const message of messages) {
-      renderer.addMessageEvent(message);
+    for (const message of currentFrameMessages) {
+      // skip preloaded messages since they're handled previously
+      if (!preloadSubscriptions.has(message.topic)) {
+        renderer.addMessageEvent(message);
+      }
     }
 
     renderRef.current.needsRender = true;
-  }, [messages, renderer]);
+  }, [currentFrameMessages, renderer, preloadSubscriptions]);
 
   // Update the renderer when the camera moves
   useEffect(() => {
