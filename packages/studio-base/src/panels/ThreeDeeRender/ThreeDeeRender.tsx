@@ -714,23 +714,19 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     }
   }, [variables, renderer]);
 
-  const lastCurrentTime = renderer?.currentTime;
-  // Keep the renderer currentTime up to date
+  // Keep the renderer currentTime up to date and handle seeking
   useEffect(() => {
-    if (renderer && currentTime != undefined) {
-      renderer.currentTime = toNanoSec(currentTime);
-      renderRef.current.needsRender = true;
+    const newTimeNs = currentTime ? toNanoSec(currentTime) : undefined;
+    if (!renderer || newTimeNs == undefined || newTimeNs === renderer.currentTime) {
+      return;
     }
-  }, [currentTime, renderer]);
 
-  // Flush the renderer's state when the seek count changes
-  useEffect(() => {
-    if (renderer && didSeek) {
-      // want to clear after the current time only if preloading is not active or if the seek time is after the previous time
-      renderer.clear(lastCurrentTime);
+    renderer.setCurrentTime(newTimeNs, didSeek);
+    renderRef.current.needsRender = true;
+    if (didSeek) {
       setDidSeek(false);
     }
-  }, [renderer, didSeek, lastCurrentTime]);
+  }, [currentTime, renderer, didSeek]);
 
   // Keep the renderer colorScheme and backgroundColor up to date
   useEffect(() => {

@@ -543,14 +543,22 @@ export class Renderer extends EventEmitter<RendererEvents> {
   }
 
   /**
-   * Clears internal state such as the TransformTree and removes Renderables from SceneExtensions.
-   * This is useful when seeking to a new playback position or when a new data source is loaded.
+   *
+   * @param currentTime what renderer.currentTime will be set to
+   * @param didSeek - whether this currentTime update is a result of a seek operation. This causes the renderer to clear some internal state.
    */
-  public clear(lastCurrentTime?: bigint): void {
+  // eslint-disable-next-line @foxglove/no-boolean-parameters
+  public setCurrentTime(newTimeNs: bigint, didSeek?: boolean): void {
+    const prevTime = this.currentTime;
+    this.currentTime = newTimeNs;
+
+    if (didSeek !== true) {
+      return;
+    }
     // These must be cleared before calling `SceneExtension#removeAllRenderables()` to allow
     // extensions to add transforms and errors back afterward
-    // don't want to clear transforms if we're seeking forward
-    if (lastCurrentTime == undefined || this.currentTime < lastCurrentTime) {
+    // only clear transforms if we're seeking backward
+    if (newTimeNs < prevTime) {
       this.transformTree.clear();
     }
     this.settings.errors.clear();
