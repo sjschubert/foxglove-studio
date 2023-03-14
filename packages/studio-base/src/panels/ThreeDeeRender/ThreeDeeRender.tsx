@@ -20,6 +20,7 @@ import { DeepPartial } from "ts-essentials";
 import { makeStyles } from "tss-react/mui";
 import { useDebouncedCallback } from "use-debounce";
 
+import { filterMap } from "@foxglove/den/collection";
 import Logger from "@foxglove/log";
 import { Time, compare, isGreaterThan, isLessThan, toNanoSec } from "@foxglove/rostime";
 import {
@@ -34,7 +35,6 @@ import {
   Topic,
   VariableValue,
 } from "@foxglove/studio";
-import { filterMap } from "@foxglove/studio-base/../../den/collection";
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
 import PublishGoalIcon from "@foxglove/studio-base/components/PublishGoalIcon";
 import PublishPointIcon from "@foxglove/studio-base/components/PublishPointIcon";
