@@ -68,39 +68,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@amplitude/analytics-connector@npm:^1.4.6":
-  version: 1.4.6
-  resolution: "@amplitude/analytics-connector@npm:1.4.6"
-  dependencies:
-    "@amplitude/ua-parser-js": 0.7.31
-  checksum: 0a2acfa54e02b405e1b66ec522aa5802f938f525ad0e81a864f9370b53a3a18f166962d891a5372c12938ec7c3fbbb3453304261845bd57e5617963c8285c2dc
-  languageName: node
-  linkType: hard
-
-"@amplitude/types@npm:^1.10.2":
-  version: 1.10.2
-  resolution: "@amplitude/types@npm:1.10.2"
-  checksum: 206ef520979c76a69baa145679a60c96249c165ff8354c0b58d183b917ae3abb35569cb0e9587ecf6c7b8636b2cc69d05ea9ecbd1cc9cade503256860bd80afe
-  languageName: node
-  linkType: hard
-
-"@amplitude/ua-parser-js@npm:0.7.31":
-  version: 0.7.31
-  resolution: "@amplitude/ua-parser-js@npm:0.7.31"
-  checksum: c72e7c8656dd77a6c2ece9e3817929022aeadf731470e53fecddce03232d87977fd5b09d76c570a2a5bed97f5dd463fe6379aac7a6c4b2d2393f14486d385eec
-  languageName: node
-  linkType: hard
-
-"@amplitude/utils@npm:^1.10.2":
-  version: 1.10.2
-  resolution: "@amplitude/utils@npm:1.10.2"
-  dependencies:
-    "@amplitude/types": ^1.10.2
-    tslib: ^2.0.0
-  checksum: 9b5d3652725e30add1e42a1f221a3954c844d9aeb9d73b197c5ea2a0b91a86ccdedd4878e829cdae0eca287e68d37016347b97860069fa233d8d9ec78821d1c9
-  languageName: node
-  linkType: hard
-
 "@ampproject/remapping@npm:^2.2.0":
   version: 2.2.0
   resolution: "@ampproject/remapping@npm:2.2.0"
@@ -2499,15 +2466,12 @@ __metadata:
     "@mui/material": 5.11.12
     "@popperjs/core": 2.11.6
     "@protobufjs/base64": 1.1.2
-    "@sentry/core": 7.43.0
-    "@sentry/types": 7.30.0
     "@storybook/addon-actions": 6.5.16
     "@storybook/react": 6.5.16
     "@testing-library/dom": 8.11.3
     "@testing-library/react": 12.1.2
     "@testing-library/react-hooks": 8.0.1
     "@testing-library/user-event": 14.4.3
-    "@types/amplitude-js": 8.16.2
     "@types/base16": ^1.0.2
     "@types/circular-dependency-plugin": 5.0.5
     "@types/cytoscape": ^3.19.9
@@ -2539,7 +2503,6 @@ __metadata:
     "@types/uuid": 9.0.1
     "@types/wicg-file-system-access": 2020.9.5
     "@uiw/react-textarea-code-editor": 2.1.1
-    amplitude-js: 8.21.6
     babel-jest: 29.5.0
     babel-plugin-transform-import-meta: 2.2.0
     browserify-zlib: 0.2.0
@@ -2574,7 +2537,7 @@ __metadata:
     jest-canvas-mock: 2.4.0
     jest-diff: 29.4.2
     jszip: 3.10.1
-    just-diff: 5.2.0
+    just-diff: 6.0.0
     leaflet: 1.9.3
     lodash: 4.17.21
     mathjs: 11.6.0
@@ -3868,41 +3831,6 @@ __metadata:
   version: 2.0.0
   resolution: "@react-dnd/shallowequal@npm:2.0.0"
   checksum: b5bbdc795d65945bb7ba2322bed5cf8d4c6fe91dced98c3b10e3d16822c438f558751135ff296f8d1aa1eaa9d0037dacab2b522ca5eb812175123b9996966dcb
-  languageName: node
-  linkType: hard
-
-"@sentry/core@npm:7.43.0":
-  version: 7.43.0
-  resolution: "@sentry/core@npm:7.43.0"
-  dependencies:
-    "@sentry/types": 7.43.0
-    "@sentry/utils": 7.43.0
-    tslib: ^1.9.3
-  checksum: 54e6b8c0ae6830211ff94d99a6d5f31fa461a9de6c4baf1507945ba7225d61bac7d48b0c021e8a8cb109ce30c83165dcbef6aba9f6a205d69703eb99b95077d0
-  languageName: node
-  linkType: hard
-
-"@sentry/types@npm:7.30.0":
-  version: 7.30.0
-  resolution: "@sentry/types@npm:7.30.0"
-  checksum: be228ae65f8750513371b6692821aa0d92d15354aa9fd7f1f1b497c2a53d20769fd56f89a1516d80e416ab73596609e805a6fae2b51510018338eedf5a0dd260
-  languageName: node
-  linkType: hard
-
-"@sentry/types@npm:7.43.0":
-  version: 7.43.0
-  resolution: "@sentry/types@npm:7.43.0"
-  checksum: fc28b9996f85fde7d9e092f067a5f1e5a9882f9b212014adcf58fa134fc14149f3118240d93c8ae52f33c74cfc889a4f4d1b52bb9f57c2dda295f8c18f242df3
-  languageName: node
-  linkType: hard
-
-"@sentry/utils@npm:7.43.0":
-  version: 7.43.0
-  resolution: "@sentry/utils@npm:7.43.0"
-  dependencies:
-    "@sentry/types": 7.43.0
-    tslib: ^1.9.3
-  checksum: 1b99986c7120710c8fcece9debecff32d4daa48395b044bada57095913116f91fb7eda8b4dc7b52824cb9329e9aaf627a8c521b32df337f9f2ed5ae354c425d8
   languageName: node
   linkType: hard
 
@@ -5996,13 +5924,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/amplitude-js@npm:8.16.2":
-  version: 8.16.2
-  resolution: "@types/amplitude-js@npm:8.16.2"
-  checksum: 4b6763098af5f0a5b06030cd094bd834ba11eeed7625f2ac040ecaf8f1a951b1420ece0f1ed7a086ebbcd29f1ae959715c3b70e21b42e5dda4ef38a4f07d7391
-  languageName: node
-  linkType: hard
-
 "@types/aria-query@npm:^4.2.0":
   version: 4.2.2
   resolution: "@types/aria-query@npm:4.2.2"
@@ -7977,20 +7898,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"amplitude-js@npm:8.21.6":
-  version: 8.21.6
-  resolution: "amplitude-js@npm:8.21.6"
-  dependencies:
-    "@amplitude/analytics-connector": ^1.4.6
-    "@amplitude/ua-parser-js": 0.7.31
-    "@amplitude/utils": ^1.10.2
-    "@babel/runtime": ^7.20.6
-    blueimp-md5: ^2.19.0
-    query-string: 8.0.3
-  checksum: a5a9c7dcd01106c8a5414b9f6bc12ce812e7fc159aadfa270129aa9f5552374a57c6864c59705b0d662d921b70cf1a23437479c17ecf729840cccb2faa760703
-  languageName: node
-  linkType: hard
-
 "ansi-align@npm:^3.0.0":
   version: 3.0.1
   resolution: "ansi-align@npm:3.0.1"
@@ -8940,13 +8847,6 @@ __metadata:
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 869417503c722e7dc54ca46715f70e15f4d9c602a423a02c825570862d12935be59ed9c7ba34a9b31f186c017c23cac6b54e35446f8353059c101da73eac22ef
-  languageName: node
-  linkType: hard
-
-"blueimp-md5@npm:^2.19.0":
-  version: 2.19.0
-  resolution: "blueimp-md5@npm:2.19.0"
-  checksum: 28095dcbd2c67152a2938006e8d7c74c3406ba6556071298f872505432feb2c13241b0476644160ee0a5220383ba94cb8ccdac0053b51f68d168728f9c382530
   languageName: node
   linkType: hard
 
@@ -10935,7 +10835,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"decode-uri-component@npm:^0.2.0, decode-uri-component@npm:^0.2.2":
+"decode-uri-component@npm:^0.2.0":
   version: 0.2.2
   resolution: "decode-uri-component@npm:0.2.2"
   checksum: 95476a7d28f267292ce745eac3524a9079058bbb35767b76e3ee87d42e34cd0275d2eb19d9d08c3e167f97556e8a2872747f5e65cbebcac8b0c98d83e285f139
@@ -13114,13 +13014,6 @@ __metadata:
   dependencies:
     to-regex-range: ^5.0.1
   checksum: cc283f4e65b504259e64fd969bcf4def4eb08d85565e906b7d36516e87819db52029a76b6363d0f02d0d532f0033c9603b9e2d943d56ee3b0d4f7ad3328ff917
-  languageName: node
-  linkType: hard
-
-"filter-obj@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "filter-obj@npm:5.1.0"
-  checksum: ba7c24d9b2c0552ee87d268e07eca74483af61fb740545ffa809f7e9e5294de38cf163ecc55af0e8a40020af9a49512c32f4022de2a858b110420fc8bffa7c9c
   languageName: node
   linkType: hard
 
@@ -16723,10 +16616,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"just-diff@npm:5.2.0":
-  version: 5.2.0
-  resolution: "just-diff@npm:5.2.0"
-  checksum: 5527fb6d28a446185250fba501ad857370c049bac7aa5a34c9ec82a45e1380af1a96137be7df2f87252d9f75ef67be41d4c0267d481ed0235b2ceb3ee1f5f75d
+"just-diff@npm:6.0.0":
+  version: 6.0.0
+  resolution: "just-diff@npm:6.0.0"
+  checksum: 966f2b774ac24481d56d62e5020cc31fa943bbc24633beede20f953ace58e985a9752ef8beaa7fe3e990fd93114fdf555023b7d6e80c69f19b69753f97644a10
   languageName: node
   linkType: hard
 
@@ -20305,17 +20198,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"query-string@npm:8.0.3":
-  version: 8.0.3
-  resolution: "query-string@npm:8.0.3"
-  dependencies:
-    decode-uri-component: ^0.2.2
-    filter-obj: ^5.1.0
-    split-on-first: ^1.0.0
-  checksum: 8df50f572f202d5e04f8fb9d347b7fe43f0bfa4a37dbc2df07bfb96ec72c0f1a08de4edf9450179e76c245a06d6b2920d1399a96f1a3ddd8bcc40937b2fecba2
-  languageName: node
-  linkType: hard
-
 "querystring-es3@npm:^0.2.0":
   version: 0.2.1
   resolution: "querystring-es3@npm:0.2.1"
@@ -22725,13 +22607,6 @@ __metadata:
     select-hose: ^2.0.0
     spdy-transport: ^3.0.0
   checksum: 2c739d0ff6f56ad36d2d754d0261d5ec358457bea7cbf77b1b05b0c6464f2ce65b85f196305f50b7bd9120723eb94bae9933466f28e67e5cd8cde4e27f1d75f8
-  languageName: node
-  linkType: hard
-
-"split-on-first@npm:^1.0.0":
-  version: 1.1.0
-  resolution: "split-on-first@npm:1.1.0"
-  checksum: 16ff85b54ddcf17f9147210a4022529b343edbcbea4ce977c8f30e38408b8d6e0f25f92cd35b86a524d4797f455e29ab89eb8db787f3c10708e0b47ebf528d30
   languageName: node
   linkType: hard
 
