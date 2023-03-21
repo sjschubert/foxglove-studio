@@ -5,7 +5,7 @@
 import {
   CheckmarkCircle20Regular,
   DismissCircle20Regular,
-  Dismiss24Filled,
+  Dismiss16Filled,
   Info20Regular,
   Warning20Regular,
 } from "@fluentui/react-icons";
@@ -30,6 +30,12 @@ const useStyles = makeStyles()((theme) => ({
     },
     ".SnackbarContent-root": {
       padding: theme.spacing(0.5, 1.5, 0.5, 1),
+
+      ".MuiIconButton-root svg": {
+        height: "1em",
+        width: "1em",
+        fontSize: "1rem",
+      },
     },
     ".SnackbarItem-message": {
       padding: 0,
@@ -67,7 +73,7 @@ const CloseSnackbarAction = ({ id }: { id: SnackbarKey }) => {
   const { closeSnackbar } = useSnackbar();
   return (
     <IconButton size="small" color="inherit" onClick={() => closeSnackbar(id)}>
-      <Dismiss24Filled />
+      <Dismiss16Filled />
     </IconButton>
   );
 };
