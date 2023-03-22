@@ -18,6 +18,7 @@ import {
   // useRef,
   useState,
 } from "react";
+import tinycolor from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
@@ -133,7 +134,7 @@ const useStyles = makeStyles<{ leftInset?: number; debugDragRegion?: boolean }>(
       },
       keyEquivalent: {
         fontFamily: fonts.MONOSPACE,
-        background: theme.palette.augmentColor({ color: { main: APP_BAR_FOREGROUND_COLOR } }).dark,
+        background: tinycolor(APP_BAR_FOREGROUND_COLOR).darken(45).toString(),
         padding: theme.spacing(0, 0.5),
         aspectRatio: 1,
         borderRadius: theme.shape.borderRadius,
