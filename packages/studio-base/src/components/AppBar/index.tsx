@@ -4,7 +4,7 @@
 
 import {
   AddCircle24Regular,
-  BoardSplit24Regular,
+  // BoardSplit24Regular,
   PanelLeft24Filled,
   PanelLeft24Regular,
   PanelRight24Filled,
@@ -13,7 +13,11 @@ import {
   Settings24Regular,
 } from "@fluentui/react-icons";
 import { AppBar as MuiAppBar, Button, IconButton } from "@mui/material";
-import { useCallback, useRef, useState } from "react";
+import {
+  useCallback,
+  // useRef,
+  useState,
+} from "react";
 import { makeStyles } from "tss-react/mui";
 
 import { AppSetting } from "@foxglove/studio-base/AppSetting";
@@ -43,7 +47,7 @@ import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 import { AddPanelMenu } from "./AddPanelMenu";
 import { DataSource } from "./DataSource";
 import { HelpMenu } from "./HelpMenu";
-import { LayoutMenu } from "./LayoutMenu";
+// import { LayoutMenu } from "./LayoutMenu";
 import { PreferencesDialog } from "./Preferences";
 import { UserIconButton, UserMenu } from "./User";
 import {
@@ -193,8 +197,8 @@ export function AppBar(props: AppBarProps): JSX.Element {
   const [helpAnchorEl, setHelpAnchorEl] = useState<undefined | HTMLElement>(undefined);
   const [userAnchorEl, setUserAnchorEl] = useState<undefined | HTMLElement>(undefined);
   const [panelAnchorEl, setPanelAnchorEl] = useState<undefined | HTMLElement>(undefined);
-  const layoutButtonRef = useRef<HTMLButtonElement>(ReactNull);
-  const layoutAnchorEl = layoutMenuOpen ? layoutButtonRef.current : undefined;
+  // const layoutButtonRef = useRef<HTMLButtonElement>(ReactNull);
+  // const layoutAnchorEl = layoutMenuOpen ? layoutButtonRef.current : undefined;
 
   const helpMenuOpen = Boolean(helpAnchorEl);
   const userMenuOpen = Boolean(userAnchorEl);
@@ -224,7 +228,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
               <IconButton className={classes.logo} size="large" color="inherit">
                 <FoxgloveLogo fontSize="inherit" color="inherit" />
               </IconButton>
-              <AppBarIconButton
+              {/* <AppBarIconButton
                 className={cx({ "Mui-selected": layoutMenuOpen })}
                 ref={layoutButtonRef}
                 color="inherit"
@@ -238,7 +242,7 @@ export function AppBar(props: AppBarProps): JSX.Element {
                 }}
               >
                 <BoardSplit24Regular />
-              </AppBarIconButton>
+              </AppBarIconButton> */}
               <AppBarIconButton
                 className={cx({ "Mui-selected": panelMenuOpen })}
                 color="inherit"
@@ -259,7 +263,12 @@ export function AppBar(props: AppBarProps): JSX.Element {
           </div>
 
           <div className={classes.middle}>
-            <DataSource onSelectDataSourceAction={onSelectDataSourceAction} />
+            <DataSource
+              layoutMenuOpen={layoutMenuOpen}
+              setLayoutMenuOpen={setLayoutMenuOpen}
+              onSelectDataSourceAction={onSelectDataSourceAction}
+              supportsAccountSettings={supportsAccountSettings}
+            />
           </div>
 
           <div className={classes.end}>
@@ -373,12 +382,12 @@ export function AppBar(props: AppBarProps): JSX.Element {
         open={panelMenuOpen}
         handleClose={() => setPanelAnchorEl(undefined)}
       />
-      <LayoutMenu
+      {/* <LayoutMenu
         anchorEl={layoutAnchorEl ?? undefined}
         open={layoutMenuOpen}
         handleClose={() => setLayoutMenuOpen(false)}
         supportsSignIn={supportsAccountSettings}
-      />
+      /> */}
       <HelpMenu
         anchorEl={helpAnchorEl}
         open={helpMenuOpen}
